@@ -14,7 +14,7 @@ fn main() -> Result<(), String> {
     let video = sdl.video()?;
     let window = video
         .window(
-            "Road Intersection — Person 1 (Rust)",
+            "Road Intersection",
             road_intersection::config::WINDOW_WIDTH,
             road_intersection::config::WINDOW_HEIGHT,
         )

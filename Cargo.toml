@@ -2,7 +2,7 @@
 name = "road_intersection"
 version = "0.1.0"
 edition = "2021"
-description = "Traffic intersection simulation (Person 1: environment & roads)"
+description = "Traffic intersection simulation"
 
 [dependencies]
 sdl2 = "0.38"

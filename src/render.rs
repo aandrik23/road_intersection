@@ -24,7 +24,7 @@ impl AppRenderer {
         draw_intersection_box(&mut self.canvas);
         draw_stop_lines(&mut self.canvas, sim);
         draw_direction_arrows(&mut self.canvas);
-        draw_cardinal_hints(&mut self.canvas);
+        draw_cardinal_labels(&mut self.canvas);
         draw_traffic_lights(&mut self.canvas, sim);
         draw_vehicles(&mut self.canvas, sim);
 
@@ -244,32 +244,109 @@ fn draw_direction_arrows(canvas: &mut Canvas<Window>) {
     draw_arrow(canvas, cx - h - 50, cy + lw / 2, 30, 0);
 }
 
-fn draw_cardinal_hints(canvas: &mut Canvas<Window>) {
-    set_color(canvas, 200, 200, 210);
+fn stroke(canvas: &mut Canvas<Window>, x1: i32, y1: i32, x2: i32, y2: i32) {
+    let _ = canvas.draw_line(
+        sdl2::rect::Point::new(x1, y1),
+        sdl2::rect::Point::new(x2, y2),
+    );
+}
+
+/// Simple 5×7 stroke font for direction labels (no TTF dependency).
+fn draw_label_word(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scale: i32) {
+    let mut cursor = x;
+    for ch in word.chars() {
+        draw_label_char(canvas, ch, cursor, y, scale);
+        cursor += 6 * scale;
+    }
+}
+
+fn draw_label_char(canvas: &mut Canvas<Window>, ch: char, x: i32, y: i32, s: i32) {
+    let mut seg = |x1: i32, y1: i32, x2: i32, y2: i32| {
+        stroke(canvas, x + x1 * s, y + y1 * s, x + x2 * s, y + y2 * s);
+    };
+    match ch.to_ascii_uppercase() {
+        'N' => {
+            seg(0, 6, 0, 0);
+            seg(0, 0, 4, 6);
+            seg(4, 6, 4, 0);
+        }
+        'O' => {
+            seg(1, 0, 3, 0);
+            seg(1, 6, 3, 6);
+            seg(0, 1, 0, 5);
+            seg(4, 1, 4, 5);
+        }
+        'R' => {
+            seg(0, 0, 0, 6);
+            seg(0, 6, 3, 6);
+            seg(3, 6, 4, 5);
+            seg(4, 5, 3, 4);
+            seg(3, 4, 4, 0);
+        }
+        'T' => {
+            seg(0, 6, 4, 6);
+            seg(2, 6, 2, 0);
+        }
+        'H' => {
+            seg(0, 0, 0, 6);
+            seg(4, 0, 4, 6);
+            seg(0, 3, 4, 3);
+        }
+        'S' => {
+            seg(4, 6, 1, 6);
+            seg(1, 6, 0, 5);
+            seg(0, 5, 0, 4);
+            seg(0, 4, 4, 2);
+            seg(4, 2, 4, 1);
+            seg(4, 1, 3, 0);
+            seg(3, 0, 0, 0);
+        }
+        'E' => {
+            seg(0, 0, 0, 6);
+            seg(0, 6, 4, 6);
+            seg(0, 3, 3, 3);
+            seg(0, 0, 4, 0);
+        }
+        'W' => {
+            seg(0, 6, 0, 0);
+            seg(0, 0, 2, 3);
+            seg(2, 3, 4, 0);
+            seg(4, 0, 4, 6);
+        }
+        _ => {}
+    }
+}
+
+fn label_width(word: &str, scale: i32) -> i32 {
+    word.chars().count() as i32 * 6 * scale
+}
+
+fn label_height(scale: i32) -> i32 {
+    8 * scale
+}
+
+fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
+    set_color(canvas, 210, 215, 225);
     let cx = config::CENTER_X as i32;
-    let pad = 24;
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx - 6, pad),
-        sdl2::rect::Point::new(cx + 6, pad),
-    );
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx, pad - 6),
-        sdl2::rect::Point::new(cx, pad + 6),
-    );
-    let bottom = config::WINDOW_HEIGHT as i32 - pad;
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx - 6, bottom),
-        sdl2::rect::Point::new(cx + 6, bottom),
-    );
-    let right = config::WINDOW_WIDTH as i32 - pad;
     let cy = config::CENTER_Y as i32;
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(pad - 6, cy),
-        sdl2::rect::Point::new(pad + 6, cy),
+    let scale = 2;
+    let pad = 14;
+
+    draw_label_word(canvas, "NORTH", cx - label_width("NORTH", scale) / 2, pad, scale);
+    draw_label_word(
+        canvas,
+        "SOUTH",
+        cx - label_width("SOUTH", scale) / 2,
+        config::WINDOW_HEIGHT as i32 - pad - label_height(scale),
+        scale,
     );
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(right - 6, cy),
-        sdl2::rect::Point::new(right + 6, cy),
+    draw_label_word(canvas, "WEST", pad, cy - label_height(scale) / 2, scale);
+    draw_label_word(
+        canvas,
+        "EAST",
+        config::WINDOW_WIDTH as i32 - pad - label_width("EAST", scale),
+        cy - label_height(scale) / 2,
+        scale,
     );
 }
 

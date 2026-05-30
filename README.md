@@ -1,58 +1,47 @@
-# Road Intersection Simulation (Rust)
+# Road Intersection
 
-SDL2 traffic intersection simulation. **Person 1** provides the environment, roads, route geometry, and rendering shell.
+Rust + SDL2 simulation of a four-way intersection: two crossing roads, traffic lights, and vehicles that follow left / right / straight routes.
 
-## Requirements
+## Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install)
-Install SDL2, then build:
+- SDL2
+
+**macOS (Homebrew):**
 
 ```sh
-brew install sdl2          # macOS
-# sudo apt install libsdl2-dev   # Debian/Ubuntu
+brew install sdl2
 ```
 
-On macOS, `.cargo/config.toml` points the linker at Homebrew’s SDL2.
-
-## Build & run
+**Debian / Ubuntu:**
 
 ```sh
-cargo build
+sudo apt install libsdl2-dev
+```
+
+On macOS, `.cargo/config.toml` links against Homebrew libraries.
+
+## Run
+
+```sh
 cargo run
 ```
 
-Lane capacities are printed on startup. The window shows the intersection and eight traffic-light placeholders (red). Press **Esc** or close the window to quit.
+Close the window or press **Esc** to exit.
 
-## Layout
-
-```
-src/
-  main.rs        — SDL event loop
-  lib.rs
-  config.rs      — shared constants
-  types.rs       — LaneId, RouteType, colors
-  world.rs       — lanes, spawns, route waypoints
-  simulation.rs  — state + integration hooks
-  render.rs      — drawing
-docs/LANE_DATA.md — team integration contract
-todo.md           — full team checklist (unchanged)
-```
-
-## Person 1 (done)
-
-- Four-way intersection, 8 lanes, stop lines, spawn points
-- Route polylines for left / right / straight
-- SDL2 rendering shell and hooks for teammates
-
-## Full project controls (Person 3)
+## Controls (full simulation)
 
 | Key | Action |
 |-----|--------|
-| ↑ | Spawn from south |
-| ↓ | Spawn from north |
-| → | Spawn from west |
-| ← | Spawn from east |
-| r | Random direction |
-| Esc | Exit |
+| ↑ | Vehicle from the south |
+| ↓ | Vehicle from the north |
+| → | Vehicle from the west |
+| ← | Vehicle from the east |
+| r | Random approach |
+| Esc | Quit |
 
-Spawning is not implemented in the Person 1 demo.
+## Project layout
+
+- `src/` — simulation code
+- `docs/LANE_DATA.md` — lane IDs, spawns, integration notes for the team
+- `todo.md` — task split for the group
