@@ -1,5 +1,3 @@
-build/
-road_intersection
-*.o
-*.dSYM/
+/target/
+**/*.rs.bk
 .DS_Store

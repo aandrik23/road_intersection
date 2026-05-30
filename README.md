@@ -1,40 +1,50 @@
-# Road Intersection Simulation
+# Road Intersection Simulation (Rust)
 
-Traffic intersection simulation (SDL2). This repository is split across three contributors; **Person 1** delivers the environment, roads, route geometry, and rendering shell.
+SDL2 traffic intersection simulation. **Person 1** provides the environment, roads, route geometry, and rendering shell.
 
 ## Requirements
 
-- C compiler (clang/gcc)
-- [SDL2](https://wiki.libsdl.org/SDL2/Installation) development libraries
-
-macOS (Homebrew):
+- [Rust](https://www.rust-lang.org/tools/install)
+Install SDL2, then build:
 
 ```sh
-brew install sdl2
+brew install sdl2          # macOS
+# sudo apt install libsdl2-dev   # Debian/Ubuntu
 ```
+
+On macOS, `.cargo/config.toml` points the linker at Homebrew’s SDL2.
 
 ## Build & run
 
 ```sh
-make
-make run
+cargo build
+cargo run
 ```
 
-On start, lane lengths and capacities are printed to the terminal. The window shows the four-way intersection, eight traffic-light placeholders (red by default), stop lines, and direction arrows. Press **Esc** to quit.
+Lane capacities are printed on startup. The window shows the intersection and eight traffic-light placeholders (red). Press **Esc** or close the window to quit.
 
-## Person 1 scope (done)
+## Layout
 
-- Two crossing roads, one lane per direction (8 lanes)
-- Stop lines, spawn points, `lane_length`, route waypoints
-- SDL2 main loop and drawing
-- Integration hooks for Persons 2 and 3 (see `docs/LANE_DATA.md`)
+```
+src/
+  main.rs        — SDL event loop
+  lib.rs
+  config.rs      — shared constants
+  types.rs       — LaneId, RouteType, colors
+  world.rs       — lanes, spawns, route waypoints
+  simulation.rs  — state + integration hooks
+  render.rs      — drawing
+docs/LANE_DATA.md — team integration contract
+todo.md           — full team checklist (unchanged)
+```
 
-## Team docs
+## Person 1 (done)
 
-- `docs/LANE_DATA.md` — lane IDs, spawn mapping, colors, APIs
-- `todo.md` — full team task list (unchanged checklist)
+- Four-way intersection, 8 lanes, stop lines, spawn points
+- Route polylines for left / right / straight
+- SDL2 rendering shell and hooks for teammates
 
-## Controls (full project — Person 3)
+## Full project controls (Person 3)
 
 | Key | Action |
 |-----|--------|
@@ -45,4 +55,4 @@ On start, lane lengths and capacities are printed to the terminal. The window sh
 | r | Random direction |
 | Esc | Exit |
 
-Vehicle spawning is not wired in the Person 1 demo.
+Spawning is not implemented in the Person 1 demo.

@@ -1,0 +1,7 @@
+# macOS Homebrew SDL2 (Linux: install libsdl2-dev; remove or adjust this file)
+[target.aarch64-apple-darwin]
+rustflags = ["-L", "/opt/homebrew/lib"]
+
+[env]
+SDL2_LIB_DIR = "/opt/homebrew/lib"
+SDL2_INCLUDE_DIR = "/opt/homebrew/include/SDL2"
