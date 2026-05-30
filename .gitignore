@@ -1,0 +1,5 @@
+build/
+road_intersection
+*.o
+*.dSYM/
+.DS_Store
