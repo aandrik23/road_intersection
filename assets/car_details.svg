@@ -1,41 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 96">
-  <!-- Untinted overlay: glass, wheels, lights. Nose points up. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 92">
+  <!-- 90s arcade car details (untinted). Nose points up. -->
 
   <!-- Windshield -->
-  <path d="M14 28 C16 24 20 22 24 22 C28 22 32 24 34 28
-           L33 36 C31 34 27 33 24 33 C21 33 17 34 15 36 Z"
-        fill="#3a5878" stroke="#101018" stroke-width="0.8"/>
+  <rect x="13" y="8" width="18" height="12"
+        fill="#3a5878" stroke="#101018" stroke-width="1.2"/>
 
   <!-- Rear window -->
-  <path d="M15 58 C17 54 20 52 24 52 C28 52 31 54 33 58
-           L32 64 C30 62 27 61 24 61 C21 61 18 62 16 64 Z"
-        fill="#3a5878" stroke="#101018" stroke-width="0.8"/>
+  <rect x="14" y="64" width="16" height="10"
+        fill="#3a5878" stroke="#101018" stroke-width="1"/>
 
   <!-- Roof -->
-  <rect x="16" y="36" width="16" height="16" rx="2" fill="#282830" opacity="0.35"/>
+  <rect x="15" y="22" width="14" height="38" fill="#282830" opacity="0.35"/>
 
   <!-- Headlights -->
-  <ellipse cx="13" cy="11" rx="2.8" ry="1.8" fill="#fff8d0" stroke="#101018" stroke-width="0.5"/>
-  <ellipse cx="35" cy="11" rx="2.8" ry="1.8" fill="#fff8d0" stroke="#101018" stroke-width="0.5"/>
+  <rect x="11" y="4" width="5" height="4" fill="#fff8d0" stroke="#101018" stroke-width="0.8"/>
+  <rect x="28" y="4" width="5" height="4" fill="#fff8d0" stroke="#101018" stroke-width="0.8"/>
 
   <!-- Taillights -->
-  <ellipse cx="12.5" cy="86" rx="2.5" ry="1.6" fill="#e83030" stroke="#101018" stroke-width="0.5"/>
-  <ellipse cx="35.5" cy="86" rx="2.5" ry="1.6" fill="#e83030" stroke="#101018" stroke-width="0.5"/>
+  <rect x="11" y="84" width="5" height="4" fill="#e83030" stroke="#101018" stroke-width="0.8"/>
+  <rect x="28" y="84" width="5" height="4" fill="#e83030" stroke="#101018" stroke-width="0.8"/>
 
   <!-- Front-left wheel -->
-  <ellipse cx="10" cy="30" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
-  <ellipse cx="10" cy="30" rx="2.2" ry="1.3" fill="#686870"/>
+  <rect x="7" y="24" width="6" height="5" rx="1" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <rect x="8.5" y="25.2" width="3" height="2.5" fill="#686870"/>
 
   <!-- Front-right wheel -->
-  <ellipse cx="38" cy="30" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
-  <ellipse cx="38" cy="30" rx="2.2" ry="1.3" fill="#686870"/>
+  <rect x="31" y="24" width="6" height="5" rx="1" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <rect x="32.5" y="25.2" width="3" height="2.5" fill="#686870"/>
 
   <!-- Rear-left wheel -->
-  <ellipse cx="10" cy="66" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
-  <ellipse cx="10" cy="66" rx="2.2" ry="1.3" fill="#686870"/>
+  <rect x="7" y="62" width="6" height="5" rx="1" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <rect x="8.5" y="63.2" width="3" height="2.5" fill="#686870"/>
 
   <!-- Rear-right wheel -->
-  <ellipse cx="38" cy="66" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
-  <ellipse cx="38" cy="66" rx="2.2" ry="1.3" fill="#686870"/>
+  <rect x="31" y="62" width="6" height="5" rx="1" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <rect x="32.5" y="63.2" width="3" height="2.5" fill="#686870"/>
 </svg>

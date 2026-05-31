@@ -62,8 +62,8 @@ impl Vehicle {
             VehicleKind::Motorcycle => config::MOTORCYCLE_LENGTH,
         };
         let lateral = match self.kind {
-            VehicleKind::Car => config::LANE_WIDTH * 0.48 * config::CAR_DRAW_WIDTH_SCALE,
-            VehicleKind::Motorcycle => config::LANE_WIDTH * 0.30,
+            VehicleKind::Car => config::LANE_WIDTH * 0.52 * config::CAR_DRAW_WIDTH_SCALE,
+            VehicleKind::Motorcycle => config::LANE_WIDTH * 0.34,
         };
 
         let mut w = lateral * config::VEHICLE_DRAW_SCALE;

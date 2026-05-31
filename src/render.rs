@@ -704,8 +704,8 @@ fn draw_vehicle_sprite(
     let pos = v.position();
     let (width, height) = v.draw_sprite_size();
     let (min_w, min_h) = match v.kind {
-        VehicleKind::Car => (18.0, 28.0),
-        VehicleKind::Motorcycle => (10.0, 20.0),
+        VehicleKind::Car => (20.0, 28.0),
+        VehicleKind::Motorcycle => (12.0, 22.0),
     };
     let w = width.max(min_w) as u32;
     let h = height.max(min_h) as u32;

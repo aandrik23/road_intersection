@@ -7,7 +7,7 @@ pub const CENTER_X: f32 = WINDOW_WIDTH as f32 * 0.5;
 pub const CENTER_Y: f32 = (WINDOW_HEIGHT - HUD_HEIGHT) as f32 * 0.5 + 8.0;
 
 pub const VEHICLE_LENGTH: f32 = 22.0;
-pub const MOTORCYCLE_LENGTH: f32 = 14.0;
+pub const MOTORCYCLE_LENGTH: f32 = 15.5;
 pub const SAFETY_GAP: f32 = 16.0;
 /// Extra bumper space when queued on the approach (before the stop line).
 pub const WAITING_EXTRA_GAP: f32 = 14.0;
@@ -21,7 +21,7 @@ pub const VEHICLE_DRAW_SCALE: f32 = 1.22;
 /// Extra width for car sprites only (narrow axis).
 pub const CAR_DRAW_WIDTH_SCALE: f32 = 1.16;
 /// Extra scale for motorcycle sprites (length and width).
-pub const MOTORCYCLE_DRAW_SCALE: f32 = 1.2;
+pub const MOTORCYCLE_DRAW_SCALE: f32 = 1.38;
 /// On-screen scale for traffic-light SVGs (texture is rasterized larger for sharpness).
 pub const SIGNAL_DRAW_SCALE: f32 = 0.68;
 
