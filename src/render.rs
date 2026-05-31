@@ -41,61 +41,71 @@ fn fill_rect(canvas: &mut Canvas<Window>, x: i32, y: i32, w: u32, h: u32) {
     let _ = canvas.fill_rect(Rect::new(x, y, w, h));
 }
 
+fn fill_circle(canvas: &mut Canvas<Window>, cx: i32, cy: i32, radius: i32) {
+    for y in -radius..=radius {
+        for x in -radius..=radius {
+            if x * x + y * y <= radius * radius {
+                let _ = canvas.draw_point(sdl2::rect::Point::new(cx + x, cy + y));
+            }
+        }
+    }
+}
+
 fn draw_roads(canvas: &mut Canvas<Window>) {
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
     let h = config::INTERSECTION_HALF as i32;
-    let road_half = (config::LANE_WIDTH as i32) + 6;
+    let road_half = config::LANE_WIDTH as i32 + 6;
 
-    set_color(canvas, 45, 48, 55);
-    fill_rect(
-        canvas,
-        0,
-        0,
-        config::WINDOW_WIDTH,
-        config::WINDOW_HEIGHT,
-    );
+    let margin_x = 95;
+    let margin_y = 55;
+
+    set_color(canvas, 35, 38, 46);
+    fill_rect(canvas, 0, 0, config::WINDOW_WIDTH, config::WINDOW_HEIGHT);
 
     set_color(canvas, 62, 66, 74);
+
     fill_rect(
         canvas,
         cx - road_half,
-        0,
+        margin_y,
         (road_half * 2) as u32,
-        config::WINDOW_HEIGHT,
+        (config::WINDOW_HEIGHT as i32 - margin_y * 2) as u32,
     );
+
     fill_rect(
         canvas,
-        0,
+        margin_x,
         cy - road_half,
-        config::WINDOW_WIDTH,
+        (config::WINDOW_WIDTH as i32 - margin_x * 2) as u32,
         (road_half * 2) as u32,
     );
 
     set_color(canvas, 45, 48, 55);
     fill_rect(canvas, cx - h, cy - h, (h * 2) as u32, (h * 2) as u32);
 
-    set_color(canvas, 90, 95, 105);
+    set_color(canvas, 220, 225, 235);
+
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx, 0),
+        sdl2::rect::Point::new(cx, margin_y),
         sdl2::rect::Point::new(cx, cy - h),
     );
     let _ = canvas.draw_line(
         sdl2::rect::Point::new(cx, cy + h),
-        sdl2::rect::Point::new(cx, config::WINDOW_HEIGHT as i32),
+        sdl2::rect::Point::new(cx, config::WINDOW_HEIGHT as i32 - margin_y),
     );
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(0, cy),
+        sdl2::rect::Point::new(margin_x, cy),
         sdl2::rect::Point::new(cx - h, cy),
     );
     let _ = canvas.draw_line(
         sdl2::rect::Point::new(cx + h, cy),
-        sdl2::rect::Point::new(config::WINDOW_WIDTH as i32, cy),
+        sdl2::rect::Point::new(config::WINDOW_WIDTH as i32 - margin_x, cy),
     );
 
     set_color(canvas, 40, 42, 48);
-    fill_rect(canvas, cx - 2, 0, 4, config::WINDOW_HEIGHT);
-    fill_rect(canvas, 0, cy - 2, config::WINDOW_WIDTH, 4);
+    fill_rect(canvas, cx - 2, margin_y, 4, (config::WINDOW_HEIGHT as i32 - margin_y * 2) as u32);
+    fill_rect(canvas, margin_x, cy - 2, (config::WINDOW_WIDTH as i32 - margin_x * 2) as u32, 4);
 }
 
 fn draw_stop_lines(canvas: &mut Canvas<Window>, sim: &Simulation) {
@@ -142,35 +152,108 @@ fn draw_intersection_box(canvas: &mut Canvas<Window>) {
     let _ = canvas.draw_rect(Rect::new(x, y, s, s));
 }
 
-fn draw_traffic_light(canvas: &mut Canvas<Window>, x: i32, y: i32, state: SignalState) {
-    set_color(canvas, 30, 30, 35);
-    fill_rect(canvas, x - 8, y - 18, 16, 36);
+fn draw_traffic_light(
+    canvas: &mut Canvas<Window>,
+    x: i32,
+    y: i32,
+    state: SignalState,
+    vertical: bool,
+) {
+    set_color(canvas, 15, 16, 20);
 
-    if state == SignalState::Green {
-        set_color(canvas, 40, 200, 70);
-    } else {
-        set_color(canvas, 40, 40, 45);
-    }
-    fill_rect(canvas, x - 5, y + 2, 10, 10);
+    if vertical {
+        fill_rect(canvas, x - 10, y - 22, 20, 44);
 
-    if state == SignalState::Red {
-        set_color(canvas, 220, 50, 50);
+        if state == SignalState::Red {
+            set_color(canvas, 235, 45, 55);
+        } else {
+            set_color(canvas, 45, 45, 48);
+        }
+        fill_circle(canvas, x, y - 10, 7);
+
+        if state == SignalState::Green {
+            set_color(canvas, 35, 220, 75);
+        } else {
+            set_color(canvas, 45, 45, 48);
+        }
+        fill_circle(canvas, x, y + 10, 7);
     } else {
-        set_color(canvas, 55, 55, 60);
+        fill_rect(canvas, x - 22, y - 10, 44, 20);
+
+        if state == SignalState::Red {
+            set_color(canvas, 235, 45, 55);
+        } else {
+            set_color(canvas, 45, 45, 48);
+        }
+        fill_circle(canvas, x - 10, y, 7);
+
+        if state == SignalState::Green {
+            set_color(canvas, 35, 220, 75);
+        } else {
+            set_color(canvas, 45, 45, 48);
+        }
+        fill_circle(canvas, x + 10, y, 7);
     }
-    fill_rect(canvas, x - 5, y - 14, 10, 10);
 }
+
 
 fn draw_traffic_lights(canvas: &mut Canvas<Window>, sim: &Simulation) {
     for lane_id in LaneId::ALL {
-        let lane = sim.world.lane(lane_id);
         let state = sim.lane_signal(lane_id);
-        draw_traffic_light(
-            canvas,
-            lane.light_pos.x as i32,
-            lane.light_pos.y as i32,
-            state,
-        );
+
+        let cx = config::CENTER_X as i32;
+        let cy = config::CENTER_Y as i32;
+        let h = config::INTERSECTION_HALF as i32;
+
+        let distance_from_intersection = 36;
+        let lane_gap = 48;
+
+        let (x, y, vertical) = match lane_id {
+            LaneId::NorthSb => (
+                cx + lane_gap,
+                cy - h - distance_from_intersection,
+                false,
+            ),
+            LaneId::NorthNb => (
+                cx - lane_gap,
+                cy - h - distance_from_intersection,
+                false,
+            ),
+
+            LaneId::SouthNb => (
+                cx - lane_gap,
+                cy + h + distance_from_intersection,
+                false,
+            ),
+            LaneId::SouthSb => (
+                cx + lane_gap,
+                cy + h + distance_from_intersection,
+                false,
+            ),
+
+            LaneId::WestEb => (
+                cx - h - distance_from_intersection,
+                cy + lane_gap,
+                true,
+            ),
+            LaneId::WestWb => (
+                cx - h - distance_from_intersection,
+                cy - lane_gap,
+                true,
+            ),
+
+            LaneId::EastWb => (
+                cx + h + distance_from_intersection,
+                cy - lane_gap,
+                true,
+            ),
+            LaneId::EastEb => (
+                cx + h + distance_from_intersection,
+                cy + lane_gap,
+                true,
+            ),
+        };
+        draw_traffic_light(canvas, x, y, state, vertical);
     }
 }
 
@@ -244,76 +327,42 @@ fn draw_direction_arrows(canvas: &mut Canvas<Window>) {
     draw_arrow(canvas, cx - h - 50, cy + lw / 2, 30, 0);
 }
 
-fn stroke(canvas: &mut Canvas<Window>, x1: i32, y1: i32, x2: i32, y2: i32) {
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(x1, y1),
-        sdl2::rect::Point::new(x2, y2),
-    );
-}
+fn draw_label_char(canvas: &mut Canvas<Window>, ch: char, x: i32, y: i32, scale: i32) {
+    let pattern: [&str; 7] = match ch.to_ascii_uppercase() {
+        'A' => ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+        'E' => ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+        'H' => ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+        'N' => ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+        'O' => ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+        'R' => ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+        'S' => ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+        'T' => ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+        'U' => ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+        'W' => ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
+        _ => ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+    };
 
-/// Simple 5×7 stroke font for direction labels (no TTF dependency).
-fn draw_label_word(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scale: i32) {
-    let mut cursor = x;
-    for ch in word.chars() {
-        draw_label_char(canvas, ch, cursor, y, scale);
-        cursor += 6 * scale;
+    for (row, line) in pattern.iter().enumerate() {
+        for (col, pixel) in line.chars().enumerate() {
+            if pixel == '1' {
+                fill_rect(
+                    canvas,
+                    x + col as i32 * scale,
+                    y + row as i32 * scale,
+                    scale as u32,
+                    scale as u32,
+                );
+            }
+        }
     }
 }
 
-fn draw_label_char(canvas: &mut Canvas<Window>, ch: char, x: i32, y: i32, s: i32) {
-    let mut seg = |x1: i32, y1: i32, x2: i32, y2: i32| {
-        stroke(canvas, x + x1 * s, y + y1 * s, x + x2 * s, y + y2 * s);
-    };
-    match ch.to_ascii_uppercase() {
-        'N' => {
-            seg(0, 6, 0, 0);
-            seg(0, 0, 4, 6);
-            seg(4, 6, 4, 0);
-        }
-        'O' => {
-            seg(1, 0, 3, 0);
-            seg(1, 6, 3, 6);
-            seg(0, 1, 0, 5);
-            seg(4, 1, 4, 5);
-        }
-        'R' => {
-            seg(0, 0, 0, 6);
-            seg(0, 6, 3, 6);
-            seg(3, 6, 4, 5);
-            seg(4, 5, 3, 4);
-            seg(3, 4, 4, 0);
-        }
-        'T' => {
-            seg(0, 6, 4, 6);
-            seg(2, 6, 2, 0);
-        }
-        'H' => {
-            seg(0, 0, 0, 6);
-            seg(4, 0, 4, 6);
-            seg(0, 3, 4, 3);
-        }
-        'S' => {
-            seg(4, 6, 1, 6);
-            seg(1, 6, 0, 5);
-            seg(0, 5, 0, 4);
-            seg(0, 4, 4, 2);
-            seg(4, 2, 4, 1);
-            seg(4, 1, 3, 0);
-            seg(3, 0, 0, 0);
-        }
-        'E' => {
-            seg(0, 0, 0, 6);
-            seg(0, 6, 4, 6);
-            seg(0, 3, 3, 3);
-            seg(0, 0, 4, 0);
-        }
-        'W' => {
-            seg(0, 6, 0, 0);
-            seg(0, 0, 2, 3);
-            seg(2, 3, 4, 0);
-            seg(4, 0, 4, 6);
-        }
-        _ => {}
+fn draw_label_word(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scale: i32) {
+    let mut cursor = x;
+
+    for ch in word.chars() {
+        draw_label_char(canvas, ch, cursor, y, scale);
+        cursor += 6 * scale;
     }
 }
 
@@ -322,25 +371,41 @@ fn label_width(word: &str, scale: i32) -> i32 {
 }
 
 fn label_height(scale: i32) -> i32 {
-    8 * scale
+    7 * scale
 }
 
 fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
-    set_color(canvas, 210, 215, 225);
+    set_color(canvas, 235, 238, 245);
+
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
-    let scale = 2;
-    let pad = 14;
+    let scale = 3;
+    let pad = 24;
 
-    draw_label_word(canvas, "NORTH", cx - label_width("NORTH", scale) / 2, pad, scale);
+    draw_label_word(
+        canvas,
+        "NORTH",
+        cx - label_width("NORTH", scale) / 2,
+        18,
+        scale,
+    );
+
     draw_label_word(
         canvas,
         "SOUTH",
         cx - label_width("SOUTH", scale) / 2,
-        config::WINDOW_HEIGHT as i32 - pad - label_height(scale),
+        config::WINDOW_HEIGHT as i32 - 18 - label_height(scale),
         scale,
     );
-    draw_label_word(canvas, "WEST", pad, cy - label_height(scale) / 2, scale);
+
+    draw_label_word(
+        canvas,
+        "WEST",
+        pad,
+        cy - label_height(scale) / 2,
+        scale,
+    );
+
     draw_label_word(
         canvas,
         "EAST",
