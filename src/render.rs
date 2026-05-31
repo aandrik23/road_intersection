@@ -33,6 +33,17 @@ mod theme {
     pub const WHITE: (u8, u8, u8) = (255, 255, 255);
     pub const LAMP_RED: (u8, u8, u8) = (220, 0, 0);
     pub const LAMP_GREEN: (u8, u8, u8) = (0, 200, 0);
+    pub const SIDEWALK: (u8, u8, u8) = (148, 144, 136);
+    pub const SIDEWALK_DARK: (u8, u8, u8) = (120, 116, 108);
+    pub const BUILDING: (u8, u8, u8) = (96, 88, 112);
+    pub const BUILDING_DARK: (u8, u8, u8) = (72, 64, 88);
+    pub const BUILDING_WINDOW: (u8, u8, u8) = (248, 220, 120);
+    pub const STREET_BOX: (u8, u8, u8) = (40, 64, 32);
+    pub const STREET_TEXT: (u8, u8, u8) = (248, 248, 200);
+    pub const PARK_FENCE: (u8, u8, u8) = (200, 200, 208);
+    pub const PARK_PATH: (u8, u8, u8) = (136, 120, 88);
+    pub const TREE_TRUNK: (u8, u8, u8) = (88, 56, 32);
+    pub const TREE_TOP: (u8, u8, u8) = (48, 120, 40);
 }
 
 pub struct AppRenderer {
@@ -54,6 +65,9 @@ impl AppRenderer {
         self.canvas.clear();
 
         draw_background(&mut self.canvas, play_h);
+        draw_edge_buildings(&mut self.canvas, play_h);
+        draw_corner_parks(&mut self.canvas, play_h);
+        draw_sidewalks(&mut self.canvas, play_h);
         draw_roads(&mut self.canvas, play_h);
         draw_crosswalks(&mut self.canvas);
         draw_intersection_zone(&mut self.canvas);
@@ -61,6 +75,7 @@ impl AppRenderer {
         draw_lane_markings(&mut self.canvas, play_h);
         draw_stop_lines(&mut self.canvas, sim);
         draw_direction_arrows(&mut self.canvas);
+        draw_street_name_labels(&mut self.canvas, play_h);
         draw_cardinal_labels(&mut self.canvas);
         draw_traffic_lights(&mut self.canvas, &mut self.sprites, sim);
         draw_vehicles(&mut self.canvas, &mut self.sprites, sim);
@@ -166,27 +181,36 @@ fn draw_dashed_line(
     }
 }
 
+fn grass_tuft_hash(x: i32, y: i32) -> u32 {
+    let mut h = (x as u32).wrapping_mul(374761393).wrapping_add(y as u32);
+    h = (h ^ (h >> 13)).wrapping_mul(1274126177);
+    h ^ (h >> 16)
+}
+
 fn draw_background(canvas: &mut Canvas<Window>, play_h: i32) {
     set_color(canvas, theme::BG.0, theme::BG.1, theme::BG.2);
     fill_rect(canvas, 0, 0, config::WINDOW_WIDTH, play_h as u32);
 
-    let step = 32i32;
+    let win_w = config::WINDOW_WIDTH as i32;
     set_color(
         canvas,
         theme::GRASS_LIGHT.0,
         theme::GRASS_LIGHT.1,
         theme::GRASS_LIGHT.2,
     );
-    for gy in (0..play_h).step_by(step as usize) {
-        for gx in (0..config::WINDOW_WIDTH as i32).step_by(step as usize) {
-            if (gx / step + gy / step) % 2 == 0 {
-                fill_rect(canvas, gx + 8, gy + 8, 4, 4);
+    for gy in (0..play_h).step_by(14) {
+        for gx in (0..win_w).step_by(14) {
+            if grass_tuft_hash(gx, gy) % 5 != 0 {
+                continue;
             }
+            let ox = (grass_tuft_hash(gx + 3, gy) % 5) as i32;
+            let oy = (grass_tuft_hash(gx, gy + 5) % 5) as i32;
+            fill_rect(canvas, gx + ox, gy + oy, 3, 2);
         }
     }
 
-    let margin_x = 72;
-    let margin_y = 48;
+    let margin_x = config::CURB_MARGIN_X as i32;
+    let margin_y = config::CURB_MARGIN_Y as i32;
     set_color(canvas, theme::CURB.0, theme::CURB.1, theme::CURB.2);
     fill_rect(canvas, 0, 0, config::WINDOW_WIDTH, margin_y as u32);
     fill_rect(
@@ -199,21 +223,174 @@ fn draw_background(canvas: &mut Canvas<Window>, play_h: i32) {
     fill_rect(canvas, 0, 0, margin_x as u32, play_h as u32);
     fill_rect(
         canvas,
-        config::WINDOW_WIDTH as i32 - margin_x,
+        win_w - margin_x,
         0,
         margin_x as u32,
         play_h as u32,
     );
 }
 
+fn draw_edge_buildings(canvas: &mut Canvas<Window>, play_h: i32) {
+    let win_w = config::WINDOW_WIDTH as i32;
+    let curb_x = config::CURB_MARGIN_X as i32;
+    let curb_y = config::CURB_MARGIN_Y as i32;
+    let cx = config::CENTER_X as i32;
+    let cy = config::CENTER_Y as i32;
+    let blocks = [
+        (12, 8, 88, curb_y - 10),
+        (win_w - 100, 8, 88, curb_y - 10),
+        (12, play_h - curb_y + 4, 96, curb_y - 12),
+        (win_w - 108, play_h - curb_y + 4, 96, curb_y - 12),
+        (8, cy - 120, curb_x - 12, 72),
+        (8, cy + 48, curb_x - 12, 72),
+        (win_w - curb_x + 4, cy - 96, curb_x - 12, 64),
+        (win_w - curb_x + 4, cy + 40, curb_x - 12, 64),
+    ];
+
+    for (x, y, w, h) in blocks {
+        set_color(
+            canvas,
+            theme::BUILDING.0,
+            theme::BUILDING.1,
+            theme::BUILDING.2,
+        );
+        fill_rect(canvas, x, y, w as u32, h as u32);
+        set_color(
+            canvas,
+            theme::BUILDING_DARK.0,
+            theme::BUILDING_DARK.1,
+            theme::BUILDING_DARK.2,
+        );
+        fill_rect(canvas, x, y + h - 6, w as u32, 6);
+        set_color(
+            canvas,
+            theme::BUILDING_WINDOW.0,
+            theme::BUILDING_WINDOW.1,
+            theme::BUILDING_WINDOW.2,
+        );
+        let mut wy = y + 10;
+        while wy + 8 < y + h - 10 {
+            let mut wx = x + 10;
+            while wx + 10 < x + w - 8 {
+                if (wx + wy) % 24 < 14 {
+                    fill_rect(canvas, wx, wy, 8, 6);
+                }
+                wx += 18;
+            }
+            wy += 16;
+        }
+    }
+
+    set_color(
+        canvas,
+        theme::BUILDING_DARK.0,
+        theme::BUILDING_DARK.1,
+        theme::BUILDING_DARK.2,
+    );
+    fill_rect(canvas, cx - 140, curb_y + 2, 48, 36);
+    fill_rect(canvas, cx + 92, curb_y + 2, 40, 28);
+    fill_rect(canvas, cx - 130, play_h - curb_y - 38, 44, 32);
+    fill_rect(canvas, cx + 100, play_h - curb_y - 42, 52, 36);
+}
+
+fn draw_tree(canvas: &mut Canvas<Window>, x: i32, y: i32) {
+    set_color(canvas, theme::TREE_TRUNK.0, theme::TREE_TRUNK.1, theme::TREE_TRUNK.2);
+    fill_rect(canvas, x - 2, y, 4, 8);
+    set_color(canvas, theme::TREE_TOP.0, theme::TREE_TOP.1, theme::TREE_TOP.2);
+    fill_circle(canvas, x, y - 4, 7);
+}
+
+fn draw_corner_parks(canvas: &mut Canvas<Window>, play_h: i32) {
+    let win_w = config::WINDOW_WIDTH as i32;
+    let cx = config::CENTER_X as i32;
+    let cy = config::CENTER_Y as i32;
+    let h = config::INTERSECTION_HALF as i32;
+    let rh = config::ROAD_HALF_WIDTH as i32;
+    let mx = config::ROAD_MARGIN_X as i32;
+    let my = config::ROAD_MARGIN_Y as i32;
+
+    let parks = [
+        (mx + 8, my + 8, 118, 88),
+        (win_w - mx - 126, my + 8, 118, 88),
+        (mx + 8, play_h - my - 96, 118, 88),
+        (win_w - mx - 126, play_h - my - 96, 118, 88),
+    ];
+
+    for (px, py, pw, ph) in parks {
+        set_color(
+            canvas,
+            theme::PARK_PATH.0,
+            theme::PARK_PATH.1,
+            theme::PARK_PATH.2,
+        );
+        fill_rect(canvas, px + 12, py + ph / 2 - 3, (pw - 24) as u32, 6);
+        fill_rect(canvas, px + pw / 2 - 3, py + 12, 6, (ph - 24) as u32);
+        set_color(
+            canvas,
+            theme::PARK_FENCE.0,
+            theme::PARK_FENCE.1,
+            theme::PARK_FENCE.2,
+        );
+        let _ = canvas.draw_rect(Rect::new(px, py, pw as u32, ph as u32));
+        fill_rect(canvas, px, py, pw as u32, 3);
+        fill_rect(canvas, px, py + ph - 3, pw as u32, 3);
+        fill_rect(canvas, px, py, 3, ph as u32);
+        fill_rect(canvas, px + pw - 3, py, 3, ph as u32);
+        draw_tree(canvas, px + 28, py + 24);
+        draw_tree(canvas, px + pw - 28, py + 24);
+        draw_tree(canvas, px + pw / 2, py + ph - 26);
+    }
+
+    let _ = (cx, cy, h, rh); // keeps corner parks clear of the intersection box
+}
+
+fn draw_sidewalks(canvas: &mut Canvas<Window>, play_h: i32) {
+    let cx = config::CENTER_X as i32;
+    let cy = config::CENTER_Y as i32;
+    let h = config::INTERSECTION_HALF as i32;
+    let rh = config::ROAD_HALF_WIDTH as i32;
+    let sw = config::SIDEWALK_WIDTH as i32;
+    let mx = config::ROAD_MARGIN_X as i32;
+    let my = config::ROAD_MARGIN_Y as i32;
+    let win_w = config::WINDOW_WIDTH as i32;
+
+    set_color(
+        canvas,
+        theme::SIDEWALK.0,
+        theme::SIDEWALK.1,
+        theme::SIDEWALK.2,
+    );
+    // Vertical arms — west and east sidewalks.
+    fill_rect(canvas, cx - rh - sw, my, sw as u32, (cy - h - my) as u32);
+    fill_rect(canvas, cx - rh - sw, cy + h, sw as u32, (play_h - my - cy - h) as u32);
+    fill_rect(canvas, cx + rh, my, sw as u32, (cy - h - my) as u32);
+    fill_rect(canvas, cx + rh, cy + h, sw as u32, (play_h - my - cy - h) as u32);
+    // Horizontal arms — north and south sidewalks.
+    fill_rect(canvas, mx, cy - rh - sw, (cx - h - mx) as u32, sw as u32);
+    fill_rect(canvas, cx + h, cy - rh - sw, (win_w - mx - cx - h) as u32, sw as u32);
+    fill_rect(canvas, mx, cy + rh, (cx - h - mx) as u32, sw as u32);
+    fill_rect(canvas, cx + h, cy + rh, (win_w - mx - cx - h) as u32, sw as u32);
+
+    set_color(
+        canvas,
+        theme::SIDEWALK_DARK.0,
+        theme::SIDEWALK_DARK.1,
+        theme::SIDEWALK_DARK.2,
+    );
+    fill_rect(canvas, cx - rh - sw, cy - h - sw, sw as u32, sw as u32);
+    fill_rect(canvas, cx + rh, cy - h - sw, sw as u32, sw as u32);
+    fill_rect(canvas, cx - rh - sw, cy + h, sw as u32, sw as u32);
+    fill_rect(canvas, cx + rh, cy + h, sw as u32, sw as u32);
+}
+
 fn draw_roads(canvas: &mut Canvas<Window>, play_h: i32) {
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
     let h = config::INTERSECTION_HALF as i32;
-    let road_half = config::LANE_WIDTH as i32 + 10;
+    let road_half = config::ROAD_HALF_WIDTH as i32;
 
-    let margin_x = 95;
-    let margin_y = 55;
+    let margin_x = config::ROAD_MARGIN_X as i32;
+    let margin_y = config::ROAD_MARGIN_Y as i32;
 
     set_color(canvas, theme::ASPHALT.0, theme::ASPHALT.1, theme::ASPHALT.2);
 
@@ -342,8 +519,8 @@ fn draw_lane_markings(canvas: &mut Canvas<Window>, play_h: i32) {
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
     let h = config::INTERSECTION_HALF as i32;
-    let margin_x = 95;
-    let margin_y = 55;
+    let margin_x = config::ROAD_MARGIN_X as i32;
+    let margin_y = config::ROAD_MARGIN_Y as i32;
 
     set_color(
         canvas,
@@ -601,8 +778,8 @@ fn draw_direction_arrows(canvas: &mut Canvas<Window>) {
     let enter_sb = config::ENTER_SB_X as i32;
     let enter_eb = config::ENTER_EB_Y as i32;
     let enter_wb = config::ENTER_WB_Y as i32;
-    let road_margin_x = 95;
-    let road_margin_y = 55;
+    let road_margin_x = config::ROAD_MARGIN_X as i32;
+    let road_margin_y = config::ROAD_MARGIN_Y as i32;
     let edge_inset = 15;
     let edge_arrow = 40;
     let near_offset = 50;
@@ -713,6 +890,67 @@ fn draw_label_pill(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scal
     draw_label_word(canvas, word, x + pad_x, y + pad_y, scale);
 }
 
+fn draw_street_name_pill(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scale: i32) {
+    let pad_x = if scale <= 1 { 5 } else { 10 };
+    let pad_y = if scale <= 1 { 3 } else { 5 };
+    let w = label_width(word, scale) + pad_x * 2;
+    let h = label_height(scale) + pad_y * 2;
+    draw_retro_box(canvas, x, y, w as u32, h as u32, theme::STREET_BOX);
+    set_color(
+        canvas,
+        theme::STREET_TEXT.0,
+        theme::STREET_TEXT.1,
+        theme::STREET_TEXT.2,
+    );
+    draw_label_word(canvas, word, x + pad_x, y + pad_y, scale);
+}
+
+fn draw_street_name_labels(canvas: &mut Canvas<Window>, play_h: i32) {
+    let cx = config::CENTER_X as i32;
+    let cy = config::CENTER_Y as i32;
+    let scale = 1;
+    let win_w = config::WINDOW_WIDTH as i32;
+    let mx = config::ROAD_MARGIN_X as i32;
+    let my = config::ROAD_MARGIN_Y as i32;
+
+    draw_street_name_pill(
+        canvas,
+        "MAIN ST",
+        cx - label_width("MAIN ST", scale) / 2 - 4,
+        my + 12,
+        scale,
+    );
+    draw_street_name_pill(
+        canvas,
+        "MAIN ST",
+        cx - label_width("MAIN ST", scale) / 2 - 4,
+        play_h - my - label_height(scale) - 18,
+        scale,
+    );
+    draw_street_name_pill(
+        canvas,
+        "OAK AVE",
+        mx + 14,
+        cy - label_height(scale) / 2 - 4,
+        scale,
+    );
+    draw_street_name_pill(
+        canvas,
+        "OAK AVE",
+        win_w - mx - label_width("OAK AVE", scale) - 26,
+        cy - label_height(scale) / 2 - 4,
+        scale,
+    );
+    draw_street_name_pill(canvas, "2ND ST", mx + 18, my + 108, scale);
+    draw_street_name_pill(
+        canvas,
+        "ELM AVE",
+        win_w - mx - label_width("ELM AVE", scale) - 30,
+        play_h - my - 132,
+        scale,
+    );
+}
+
 fn draw_chip(canvas: &mut Canvas<Window>, label: &str, x: i32, y: i32, scale: i32) -> i32 {
     let pad_x = 8;
     let pad_y = 5;
@@ -727,7 +965,7 @@ fn draw_chip(canvas: &mut Canvas<Window>, label: &str, x: i32, y: i32, scale: i3
 fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
-    let scale = 2;
+    let scale = 1;
 
     draw_label_pill(
         canvas,

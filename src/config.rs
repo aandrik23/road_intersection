@@ -74,3 +74,11 @@ pub const EXIT_WB_Y: f32 = LANE_NORTH_Y; // depart west ←
 
 pub const MAX_ROUTE_WAYPOINTS: usize = 16;
 pub const MAX_VEHICLES: usize = 64;
+
+/// Road / scenery layout (pixels) — shared by render.
+pub const ROAD_MARGIN_X: f32 = 95.0;
+pub const ROAD_MARGIN_Y: f32 = 55.0;
+pub const CURB_MARGIN_X: f32 = 72.0;
+pub const CURB_MARGIN_Y: f32 = 48.0;
+pub const ROAD_HALF_WIDTH: f32 = LANE_WIDTH + 10.0;
+pub const SIDEWALK_WIDTH: f32 = 10.0;
