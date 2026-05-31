@@ -485,50 +485,92 @@ fn draw_traffic_lights(canvas: &mut Canvas<Window>, sprites: &mut SpriteAtlas, s
     }
 }
 
+fn fill_arrow_head_down(canvas: &mut Canvas<Window>, cx: i32, tip_y: i32, head_len: i32) {
+    for i in 0..head_len {
+        let half = i;
+        fill_rect(canvas, cx - half, tip_y - i, (2 * half + 1) as u32, 1);
+    }
+}
+
+fn fill_arrow_head_up(canvas: &mut Canvas<Window>, cx: i32, tip_y: i32, head_len: i32) {
+    for i in 0..head_len {
+        let half = i;
+        fill_rect(canvas, cx - half, tip_y + i, (2 * half + 1) as u32, 1);
+    }
+}
+
+fn fill_arrow_head_right(canvas: &mut Canvas<Window>, cy: i32, tip_x: i32, head_len: i32) {
+    for i in 0..head_len {
+        let half = i;
+        fill_rect(canvas, tip_x - i, cy - half, 1, (2 * half + 1) as u32);
+    }
+}
+
+fn fill_arrow_head_left(canvas: &mut Canvas<Window>, cy: i32, tip_x: i32, head_len: i32) {
+    for i in 0..head_len {
+        let half = i;
+        fill_rect(canvas, tip_x + i, cy - half, 1, (2 * half + 1) as u32);
+    }
+}
+
 fn draw_arrow(canvas: &mut Canvas<Window>, x: i32, y: i32, dx: i32, dy: i32) {
     set_color(canvas, theme::ARROW.0, theme::ARROW.1, theme::ARROW.2);
-    let tip_x = x + dx;
-    let tip_y = y + dy;
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(x, y),
-        sdl2::rect::Point::new(tip_x, tip_y),
-    );
+
+    const SHAFT: i32 = 2;
+    const HEAD: i32 = 6;
+
     if dy > 0 {
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x - 6, tip_y - 10),
-        );
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x + 6, tip_y - 10),
-        );
+        let tip_y = y + dy;
+        let head_base = tip_y - HEAD + 1;
+        if head_base > y {
+            fill_rect(
+                canvas,
+                x - SHAFT / 2,
+                y,
+                SHAFT as u32,
+                (head_base - y) as u32,
+            );
+        }
+        fill_arrow_head_down(canvas, x, tip_y, HEAD);
     } else if dy < 0 {
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x - 6, tip_y + 10),
-        );
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x + 6, tip_y + 10),
-        );
+        let tip_y = y + dy;
+        let head_base = tip_y + HEAD - 1;
+        if y > head_base {
+            fill_rect(
+                canvas,
+                x - SHAFT / 2,
+                head_base,
+                SHAFT as u32,
+                (y - head_base) as u32,
+            );
+        }
+        fill_arrow_head_up(canvas, x, tip_y, HEAD);
     } else if dx > 0 {
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x - 10, tip_y - 6),
-        );
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x - 10, tip_y + 6),
-        );
+        let tip_x = x + dx;
+        let head_base = tip_x - HEAD + 1;
+        if head_base > x {
+            fill_rect(
+                canvas,
+                x,
+                y - SHAFT / 2,
+                (head_base - x) as u32,
+                SHAFT as u32,
+            );
+        }
+        fill_arrow_head_right(canvas, y, tip_x, HEAD);
     } else if dx < 0 {
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x + 10, tip_y - 6),
-        );
-        let _ = canvas.draw_line(
-            sdl2::rect::Point::new(tip_x, tip_y),
-            sdl2::rect::Point::new(tip_x + 10, tip_y + 6),
-        );
+        let tip_x = x + dx;
+        let head_base = tip_x + HEAD - 1;
+        if x > head_base {
+            fill_rect(
+                canvas,
+                head_base,
+                y - SHAFT / 2,
+                (x - head_base) as u32,
+                SHAFT as u32,
+            );
+        }
+        fill_arrow_head_left(canvas, y, tip_x, HEAD);
     }
 }
 
@@ -541,20 +583,28 @@ fn draw_direction_arrows(canvas: &mut Canvas<Window>) {
     let enter_sb = config::ENTER_SB_X as i32;
     let enter_eb = config::ENTER_EB_Y as i32;
     let enter_wb = config::ENTER_WB_Y as i32;
-    let margin_y = 70;
-    let margin_x = 70;
+    let road_margin_x = 95;
+    let road_margin_y = 55;
+    let edge_inset = 15;
+    let edge_arrow = 40;
+    let near_offset = 50;
+    let near_arrow = 30;
     let play_h = playfield_height();
     let win_w = config::WINDOW_WIDTH as i32;
+    let edge_x = road_margin_x + edge_inset;
+    let edge_y = road_margin_y + edge_inset;
 
-    draw_arrow(canvas, enter_sb, margin_y, 0, 40);
-    draw_arrow(canvas, enter_nb, play_h - margin_y, 0, -40);
-    draw_arrow(canvas, margin_x, enter_eb, 40, 0);
-    draw_arrow(canvas, win_w - margin_x, enter_wb, -40, 0);
+    // N–S: one lane column per approach (west column ↓, east column ↑).
+    draw_arrow(canvas, enter_sb, edge_y, 0, edge_arrow);
+    draw_arrow(canvas, enter_nb, play_h - edge_y, 0, -edge_arrow);
+    draw_arrow(canvas, enter_sb, iy0 - near_offset, 0, near_arrow);
+    draw_arrow(canvas, enter_nb, iy1 + near_offset, 0, -near_arrow);
 
-    draw_arrow(canvas, enter_sb, iy0 - 50, 0, 30);
-    draw_arrow(canvas, enter_nb, iy1 + 50, 0, -30);
-    draw_arrow(canvas, ix0 - 50, enter_eb, 30, 0);
-    draw_arrow(canvas, ix1 + 50, enter_wb, -30, 0);
+    // E–W: mirror the same layout — south row →, north row ← (see config / README).
+    draw_arrow(canvas, edge_x, enter_eb, edge_arrow, 0);
+    draw_arrow(canvas, win_w - edge_x, enter_wb, -edge_arrow, 0);
+    draw_arrow(canvas, ix0 - near_offset, enter_eb, near_arrow, 0);
+    draw_arrow(canvas, ix1 + near_offset, enter_wb, -near_arrow, 0);
 }
 
 fn glyph_pattern(ch: char) -> [&'static str; 7] {
