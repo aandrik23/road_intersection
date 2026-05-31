@@ -120,3 +120,12 @@ pub fn lane_capacity(lane_length: f32) -> i32 {
     }
     (lane_length / slot).floor() as i32
 }
+
+/// Uniform random route at spawn (equal weight for left / right / straight).
+pub fn random_route_uniform(seed: u32) -> RouteType {
+    match seed % 3 {
+        0 => RouteType::Left,
+        1 => RouteType::Right,
+        _ => RouteType::Straight,
+    }
+}

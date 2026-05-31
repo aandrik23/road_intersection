@@ -1,4 +1,5 @@
 pub mod config;
+pub mod input;
 pub mod render;
 pub mod simulation;
 pub mod traffic_lights;

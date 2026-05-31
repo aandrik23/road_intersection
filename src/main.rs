@@ -1,15 +1,15 @@
+use road_intersection::input::{InputAction, InputHandler};
 use road_intersection::render::AppRenderer;
 use road_intersection::simulation::Simulation;
 use road_intersection::traffic_lights::{print_traffic_light_summary, TrafficLightController};
 use road_intersection::world;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 use std::thread;
 use std::time::{Duration, Instant};
 
 fn main() -> Result<(), String> {
     let mut sim = Simulation::new();
     let mut traffic_lights = TrafficLightController::new();
+    let mut input = InputHandler::new();
 
     world::print_lane_table(&sim.world);
     print_traffic_light_summary();
@@ -39,19 +39,16 @@ fn main() -> Result<(), String> {
 
     'running: loop {
         for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
-                _ => {}
+            if input.handle_event(&mut sim, event) == InputAction::Quit {
+                break 'running;
             }
         }
 
         let now = Instant::now();
         let dt = now.duration_since(last_frame).as_secs_f32();
         last_frame = now;
+
+        // input → vehicles → lights → draw
         sim.update_vehicles(dt);
         traffic_lights.update(&mut sim, dt);
 
