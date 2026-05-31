@@ -15,11 +15,9 @@ pub const VEHICLE_DRAW_SCALE: f32 = 0.88;
 pub const INTERSECTION_HALF: f32 = 84.0;
 pub const LANE_WIDTH: f32 = 40.0;
 /// How far into the box (0–1) before a left turn begins (drive straight first).
-pub const TURN_LEFT_DEPTH: f32 = 0.58;
+pub const TURN_LEFT_DEPTH: f32 = 0.66;
 /// Shallower entry for right turns.
 pub const TURN_RIGHT_DEPTH: f32 = 0.36;
-/// When sweeping left, how much to pull toward the intersection center (0–1).
-pub const TURN_CROSS_BLEND: f32 = 0.75;
 pub const ARM_LENGTH: f32 = 260.0;
 
 /// How far traffic lights sit beside the lane (not on the vehicle path).

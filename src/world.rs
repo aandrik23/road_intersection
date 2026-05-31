@@ -287,10 +287,8 @@ fn set_route(world: &mut World, lane: LaneId, route: RouteType, path: RoutePath)
     world.routes[lane_index(lane)][route_index(route)] = path;
 }
 
-/// Helpers for natural turn paths: enter the box, then arc toward the exit.
+/// Helpers for turn paths: straight into the box, then a 90° bend (no diagonals).
 struct TurnGeometry {
-    cx: f32,
-    cy: f32,
     ix0: f32,
     ix1: f32,
     iy0: f32,
@@ -302,8 +300,6 @@ struct TurnGeometry {
 impl TurnGeometry {
     fn new() -> Self {
         Self {
-            cx: config::CENTER_X,
-            cy: config::CENTER_Y,
             ix0: config::IX0,
             ix1: config::IX1,
             iy0: config::IY0,
@@ -329,15 +325,6 @@ impl TurnGeometry {
         self.ix1 - self.span_x * depth_frac
     }
 
-    fn blend_x(&self, x: f32) -> f32 {
-        x + (self.cx - x) * config::TURN_CROSS_BLEND
-    }
-
-    fn blend_y(&self, y: f32) -> f32 {
-        y + (self.cy - y) * config::TURN_CROSS_BLEND
-    }
-
-    /// Interior point on an arm (not on the box border).
     fn inner_x_west(&self) -> f32 {
         self.ix0 + self.span_x * config::TURN_RIGHT_DEPTH
     }
@@ -348,6 +335,14 @@ impl TurnGeometry {
 
     fn inner_y_north(&self) -> f32 {
         self.iy0 + self.span_y * config::TURN_RIGHT_DEPTH
+    }
+
+    fn lerp(&self, from: f32, toward: f32, frac: f32) -> f32 {
+        from + (toward - from) * frac
+    }
+
+    fn needs_align(from: f32, target: f32) -> bool {
+        (target - from).abs() > 2.0
     }
 }
 
@@ -381,17 +376,13 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ex_sb,
                 y: iy1 + arm,
             });
-            // Left → east: enter south, sweep through center, exit east.
+            // Left → east: advance toward exit row, align, then east (no extra nudge at ix1).
+            let y_entry = g.lerp(iy0, er_eb, config::TURN_LEFT_DEPTH);
             left.push(stop);
-            left.push(Vec2 {
-                x: er_sb,
-                y: g.y_from_north(config::TURN_LEFT_DEPTH),
-            });
-            left.push(Vec2 {
-                x: g.blend_x(er_sb),
-                y: g.y_from_north(config::TURN_LEFT_DEPTH),
-            });
-            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: er_sb, y: y_entry });
+            if TurnGeometry::needs_align(y_entry, er_eb) {
+                left.push(Vec2 { x: er_sb, y: er_eb });
+            }
             left.push(Vec2 { x: ix1, y: er_eb });
             left.push(Vec2 {
                 x: ix1 + arm,
@@ -429,16 +420,12 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ex_nb,
                 y: iy0 - arm,
             });
+            let y_entry = g.lerp(iy1, ex_wb, config::TURN_LEFT_DEPTH);
             left.push(stop);
-            left.push(Vec2 {
-                x: er_nb,
-                y: g.y_from_south(config::TURN_LEFT_DEPTH),
-            });
-            left.push(Vec2 {
-                x: g.blend_x(er_nb),
-                y: g.y_from_south(config::TURN_LEFT_DEPTH),
-            });
-            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: er_nb, y: y_entry });
+            if TurnGeometry::needs_align(y_entry, ex_wb) {
+                left.push(Vec2 { x: er_nb, y: ex_wb });
+            }
             left.push(Vec2 { x: ix0, y: ex_wb });
             left.push(Vec2 {
                 x: ix0 - arm,
@@ -475,16 +462,12 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ix1 + arm,
                 y: ex_eb,
             });
+            let x_entry = g.lerp(ix0, er_nb, config::TURN_LEFT_DEPTH);
             left.push(stop);
-            left.push(Vec2 {
-                x: g.x_from_west(config::TURN_LEFT_DEPTH),
-                y: er_eb,
-            });
-            left.push(Vec2 {
-                x: g.x_from_west(config::TURN_LEFT_DEPTH),
-                y: g.blend_y(er_eb),
-            });
-            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: x_entry, y: er_eb });
+            if TurnGeometry::needs_align(x_entry, er_nb) {
+                left.push(Vec2 { x: er_nb, y: er_eb });
+            }
             left.push(Vec2 { x: er_nb, y: iy0 });
             left.push(Vec2 {
                 x: ex_nb,
@@ -517,16 +500,12 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ix0 - arm,
                 y: ex_wb,
             });
+            let x_entry = g.lerp(ix1, er_sb, config::TURN_LEFT_DEPTH);
             left.push(stop);
-            left.push(Vec2 {
-                x: g.x_from_east(config::TURN_LEFT_DEPTH),
-                y: er_wb,
-            });
-            left.push(Vec2 {
-                x: g.x_from_east(config::TURN_LEFT_DEPTH),
-                y: g.blend_y(er_wb),
-            });
-            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: x_entry, y: er_wb });
+            if TurnGeometry::needs_align(x_entry, er_sb) {
+                left.push(Vec2 { x: er_sb, y: er_wb });
+            }
             left.push(Vec2 { x: er_sb, y: iy1 });
             left.push(Vec2 {
                 x: ex_sb,
