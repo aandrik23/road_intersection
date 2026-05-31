@@ -198,61 +198,17 @@ fn draw_traffic_light(
 
 
 fn draw_traffic_lights(canvas: &mut Canvas<Window>, sim: &Simulation) {
+    // One signal per approach on the inbound (right-hand) lane only.
     for lane_id in LaneId::ALL {
+        let lane = sim.world.lane(lane_id);
+        if !lane.inbound {
+            continue;
+        }
+
         let state = sim.lane_signal(lane_id);
-
-        let cx = config::CENTER_X as i32;
-        let cy = config::CENTER_Y as i32;
-        let h = config::INTERSECTION_HALF as i32;
-
-        let distance_from_intersection = 36;
-        let lane_gap = 48;
-
-        let (x, y, vertical) = match lane_id {
-            LaneId::NorthSb => (
-                cx + lane_gap,
-                cy - h - distance_from_intersection,
-                false,
-            ),
-            LaneId::NorthNb => (
-                cx - lane_gap,
-                cy - h - distance_from_intersection,
-                false,
-            ),
-
-            LaneId::SouthNb => (
-                cx - lane_gap,
-                cy + h + distance_from_intersection,
-                false,
-            ),
-            LaneId::SouthSb => (
-                cx + lane_gap,
-                cy + h + distance_from_intersection,
-                false,
-            ),
-
-            LaneId::WestEb => (
-                cx - h - distance_from_intersection,
-                cy + lane_gap,
-                true,
-            ),
-            LaneId::WestWb => (
-                cx - h - distance_from_intersection,
-                cy - lane_gap,
-                true,
-            ),
-
-            LaneId::EastWb => (
-                cx + h + distance_from_intersection,
-                cy - lane_gap,
-                true,
-            ),
-            LaneId::EastEb => (
-                cx + h + distance_from_intersection,
-                cy + lane_gap,
-                true,
-            ),
-        };
+        let x = lane.light_pos.x as i32;
+        let y = lane.light_pos.y as i32;
+        let vertical = lane.heading == 90.0 || lane.heading == 270.0;
         draw_traffic_light(canvas, x, y, state, vertical);
     }
 }
