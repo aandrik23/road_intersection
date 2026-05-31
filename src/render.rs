@@ -417,13 +417,16 @@ fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
 
 fn draw_vehicles(canvas: &mut Canvas<Window>, sim: &Simulation) {
     for v in &sim.vehicles {
-        set_color(canvas, v.color.r, v.color.g, v.color.b);
-        let hw = (v.width * 0.5) as i32;
-        let hh = (v.height * 0.5) as i32;
+        let color = v.color();
+        set_color(canvas, color.r, color.g, color.b);
+        let pos = v.position();
+        let (width, height) = v.draw_extents();
+        let hw = (width * 0.5) as i32;
+        let hh = (height * 0.5) as i32;
         fill_rect(
             canvas,
-            v.x as i32 - hw,
-            v.y as i32 - hh,
+            pos.x as i32 - hw,
+            pos.y as i32 - hh,
             (hw * 2) as u32,
             (hh * 2) as u32,
         );

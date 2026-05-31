@@ -469,5 +469,5 @@ pub fn print_lane_table(world: &World) {
     }
     println!("\nRoute colors: LEFT=blue RIGHT=yellow STRAIGHT=green");
     println!("Controls (Person 3): arrows spawn, r random, Esc quit");
-    println!("Queue hook get_lane_queue_count() -> stub 0\n");
+    println!("Queue hook get_lane_queue_count() — live when vehicles are queued\n");
 }

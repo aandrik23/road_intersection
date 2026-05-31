@@ -4,6 +4,7 @@ pub const WINDOW_HEIGHT: u32 = 720;
 
 pub const VEHICLE_LENGTH: f32 = 28.0;
 pub const SAFETY_GAP: f32 = 12.0;
+pub const VEHICLE_SPEED: f32 = 90.0;
 
 pub const CENTER_X: f32 = 480.0;
 pub const CENTER_Y: f32 = 360.0;

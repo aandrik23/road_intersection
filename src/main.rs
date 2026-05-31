@@ -1,12 +1,11 @@
 use road_intersection::render::AppRenderer;
 use road_intersection::simulation::Simulation;
-use road_intersection::world;
 use road_intersection::traffic_lights::{print_traffic_light_summary, TrafficLightController};
-use std::time::{Duration, Instant};
+use road_intersection::world;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::thread;
-
+use std::time::{Duration, Instant};
 
 fn main() -> Result<(), String> {
     let mut sim = Simulation::new();
@@ -53,6 +52,7 @@ fn main() -> Result<(), String> {
         let now = Instant::now();
         let dt = now.duration_since(last_frame).as_secs_f32();
         last_frame = now;
+        sim.update_vehicles(dt);
         traffic_lights.update(&mut sim, dt);
 
         app.draw_frame(&sim)?;
