@@ -186,11 +186,15 @@ fn cap_for_leader(me: &Vehicle, vehicles: &[Vehicle], self_index: usize, advance
 }
 
 fn cap_for_red_light(me: &Vehicle, signal: SignalState, advance: f32) -> f32 {
-    if signal == SignalState::Green || me.route_progress >= me.lane_length {
+    if signal == SignalState::Green {
         return advance;
     }
-    let max_at_stop = me.lane_length;
-    let allowed = max_at_stop - me.route_progress;
+    // Already committed past the stop line — keep clearing the intersection.
+    if me.route_progress > me.lane_length {
+        return advance;
+    }
+    // Red: hold at or before the stop line.
+    let allowed = me.lane_length - me.route_progress;
     advance.min(allowed.max(0.0))
 }
 
@@ -254,6 +258,28 @@ mod tests {
         let advance = v.compute_advance(1.0, SignalState::Red, &vehicles, 0);
         v.apply_advance(advance);
         assert!(v.route_progress() <= lane_length + 0.01);
+    }
+
+    #[test]
+    fn red_light_holds_at_stop_line() {
+        let world = World::new();
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let lane_length = world.lane(LaneId::SouthNb).lane_length;
+        v.apply_advance(lane_length);
+        let vehicles = [v.clone()];
+        let advance = v.compute_advance(1.0, SignalState::Red, &vehicles, 0);
+        assert_eq!(advance, 0.0);
+    }
+
+    #[test]
+    fn green_light_passes_stop_line() {
+        let world = World::new();
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let lane_length = world.lane(LaneId::SouthNb).lane_length;
+        v.apply_advance(lane_length);
+        let vehicles = [v.clone()];
+        let advance = v.compute_advance(1.0, SignalState::Green, &vehicles, 0);
+        assert!(advance > 0.0);
     }
 
     #[test]

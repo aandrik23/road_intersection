@@ -289,6 +289,8 @@ fn set_route(world: &mut World, lane: LaneId, route: RouteType, path: RoutePath)
 
 fn build_paths_for_lane(world: &mut World, lane: LaneId) {
     let arm = config::ARM_LENGTH;
+    let cx = config::CENTER_X;
+    let cy = config::CENTER_Y;
     let ix0 = config::IX0;
     let ix1 = config::IX1;
     let iy0 = config::IY0;
@@ -301,6 +303,7 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
     let ex_sb = config::EXIT_SB_X;
     let ex_eb = config::EXIT_EB_Y;
     let ex_wb = config::EXIT_WB_Y;
+    let hub = Vec2 { x: cx, y: cy };
 
     let mut straight = PathBuilder::new(lane, RouteType::Straight);
     let mut left = PathBuilder::new(lane, RouteType::Left);
@@ -316,16 +319,19 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ex_sb,
                 y: iy1 + arm,
             });
+            // Left → east: into the box, through center, then east.
             left.push(stop);
-            left.push(Vec2 { x: er_sb, y: iy1 });
-            left.push(Vec2 { x: ix1, y: iy1 });
-            left.push(Vec2 { x: ix1, y: ex_eb });
+            left.push(Vec2 { x: er_sb, y: cy });
+            left.push(hub);
+            left.push(Vec2 { x: cx, y: er_eb });
             left.push(Vec2 {
                 x: ix1 + arm,
                 y: ex_eb,
             });
+            // Right → west: through center, then west.
             right.push(stop);
-            right.push(Vec2 { x: ix0, y: iy0 });
+            right.push(Vec2 { x: er_sb, y: cy });
+            right.push(hub);
             right.push(Vec2 { x: ix0, y: ex_wb });
             right.push(Vec2 {
                 x: ix0 - arm,
@@ -342,15 +348,16 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: iy0 - arm,
             });
             left.push(stop);
-            left.push(Vec2 { x: er_nb, y: iy0 });
-            left.push(Vec2 { x: ix0, y: iy0 });
+            left.push(Vec2 { x: er_nb, y: cy });
+            left.push(hub);
             left.push(Vec2 { x: ix0, y: ex_wb });
             left.push(Vec2 {
                 x: ix0 - arm,
                 y: ex_wb,
             });
             right.push(stop);
-            right.push(Vec2 { x: ix1, y: iy1 });
+            right.push(Vec2 { x: er_nb, y: cy });
+            right.push(hub);
             right.push(Vec2 { x: ix1, y: ex_eb });
             right.push(Vec2 {
                 x: ix1 + arm,
@@ -367,16 +374,17 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: ex_eb,
             });
             left.push(stop);
-            left.push(Vec2 { x: ix1, y: er_eb });
-            left.push(Vec2 { x: ix1, y: iy0 });
-            left.push(Vec2 { x: ex_nb, y: iy0 });
+            left.push(Vec2 { x: cx, y: er_eb });
+            left.push(hub);
+            left.push(Vec2 { x: er_nb, y: cy });
             left.push(Vec2 {
                 x: ex_nb,
                 y: iy0 - arm,
             });
             right.push(stop);
-            right.push(Vec2 { x: ix0, y: iy1 });
-            right.push(Vec2 { x: ex_sb, y: iy1 });
+            right.push(Vec2 { x: cx, y: er_eb });
+            right.push(hub);
+            right.push(Vec2 { x: er_sb, y: cy });
             right.push(Vec2 {
                 x: ex_sb,
                 y: iy1 + arm,
@@ -392,16 +400,17 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: ex_wb,
             });
             left.push(stop);
-            left.push(Vec2 { x: ix0, y: er_wb });
-            left.push(Vec2 { x: ix0, y: iy1 });
-            left.push(Vec2 { x: ex_sb, y: iy1 });
+            left.push(Vec2 { x: cx, y: er_wb });
+            left.push(hub);
+            left.push(Vec2 { x: er_sb, y: cy });
             left.push(Vec2 {
                 x: ex_sb,
                 y: iy1 + arm,
             });
             right.push(stop);
-            right.push(Vec2 { x: ix1, y: iy0 });
-            right.push(Vec2 { x: ex_nb, y: iy0 });
+            right.push(Vec2 { x: cx, y: er_wb });
+            right.push(hub);
+            right.push(Vec2 { x: er_nb, y: cy });
             right.push(Vec2 {
                 x: ex_nb,
                 y: iy0 - arm,
