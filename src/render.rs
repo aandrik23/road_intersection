@@ -242,6 +242,53 @@ fn draw_crosswalks(canvas: &mut Canvas<Window>) {
     let enter_nb = config::ENTER_NB_X as i32;
     let enter_eb = config::ENTER_EB_Y as i32;
     let enter_wb = config::ENTER_WB_Y as i32;
+    let depth = config::CROSSWALK_DEPTH as i32;
+
+    // North side of box — southbound traffic crosses here (E–W band).
+    draw_crosswalk_band(canvas, enter_nb, iy1, depth, true);
+    // South side — northbound traffic (E–W band).
+    draw_crosswalk_band(canvas, enter_sb, iy0 - depth, depth, true);
+    // West side — eastbound traffic (N–S band).
+    draw_crosswalk_band(canvas, enter_eb, ix0 - depth, depth, false);
+    // East side — westbound traffic (N–S band).
+    draw_crosswalk_band(canvas, enter_wb, ix1, depth, false);
+}
+
+/// Chunky 90s zebra crossing centered on a lane.
+/// `horizontal_band`: true = E–W band with vertical stripes; false = N–S band with horizontal stripes.
+fn draw_crosswalk_band(
+    canvas: &mut Canvas<Window>,
+    lane_center: i32,
+    band_origin: i32,
+    depth: i32,
+    horizontal_band: bool,
+) {
+    let lane_half = (config::LANE_WIDTH * 0.5) as i32;
+    let span_inset = 4;
+    let span_start = lane_center - lane_half + span_inset;
+    let span_end = lane_center + lane_half - span_inset;
+    let stripe = 3;
+    let gap = 4;
+    let step = stripe + gap;
+
+    let (bx, by, bw, bh) = if horizontal_band {
+        (span_start, band_origin, span_end - span_start, depth)
+    } else {
+        (band_origin, span_start, depth, span_end - span_start)
+    };
+
+    // Asphalt pad behind stripes (slightly inset).
+    set_color(
+        canvas,
+        theme::ASPHALT_DARK.0,
+        theme::ASPHALT_DARK.1,
+        theme::ASPHALT_DARK.2,
+    );
+    fill_rect(canvas, bx, by, bw as u32, bh as u32);
+
+    // Retro outline.
+    set_color(canvas, theme::BLACK.0, theme::BLACK.1, theme::BLACK.2);
+    let _ = canvas.draw_rect(Rect::new(bx, by, bw as u32, bh as u32));
 
     set_color(
         canvas,
@@ -250,41 +297,18 @@ fn draw_crosswalks(canvas: &mut Canvas<Window>) {
         theme::CROSSWALK.2,
     );
 
-    let stripe = 4;
-    let gap = 5;
-    let span = 28;
-
-    for i in 0..5 {
-        let offset = i * (stripe + gap);
-        let cw = config::CROSSWALK_DEPTH as i32;
-        fill_rect(
-            canvas,
-            enter_sb - span / 2 + offset,
-            iy0 - cw,
-            stripe as u32,
-            cw as u32,
-        );
-        fill_rect(
-            canvas,
-            enter_nb - span / 2 + offset,
-            iy1,
-            stripe as u32,
-            cw as u32,
-        );
-        fill_rect(
-            canvas,
-            ix0 - cw,
-            enter_eb - span / 2 + offset,
-            cw as u32,
-            stripe as u32,
-        );
-        fill_rect(
-            canvas,
-            ix1,
-            enter_wb - span / 2 + offset,
-            cw as u32,
-            stripe as u32,
-        );
+    if horizontal_band {
+        let mut x = span_start + 1;
+        while x + stripe <= span_end - 1 {
+            fill_rect(canvas, x, by + 1, stripe as u32, (depth - 2) as u32);
+            x += step;
+        }
+    } else {
+        let mut y = span_start + 1;
+        while y + stripe <= span_end - 1 {
+            fill_rect(canvas, bx + 1, y, (depth - 2) as u32, stripe as u32);
+            y += step;
+        }
     }
 }
 
