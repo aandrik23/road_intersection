@@ -57,14 +57,19 @@ impl TrafficLightController {
         }
     }
 
-    pub fn update(&mut self, sim: &mut Simulation, dt_seconds: f32) {
+    /// Returns `true` when the active green phase just changed (play signal SFX).
+    pub fn update(&mut self, sim: &mut Simulation, dt_seconds: f32) -> bool {
         self.elapsed_in_phase += dt_seconds;
 
-        if self.should_switch_phase(sim) {
+        let switched = if self.should_switch_phase(sim) {
             self.switch_phase();
-        }
+            true
+        } else {
+            false
+        };
 
         self.apply_phase_to_simulation(sim);
+        switched
     }
 
     fn should_switch_phase(&self, sim: &Simulation) -> bool {

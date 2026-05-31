@@ -1,3 +1,4 @@
+use road_intersection::audio::SoundEngine;
 use road_intersection::input::{InputAction, InputHandler};
 use road_intersection::render::AppRenderer;
 use road_intersection::simulation::Simulation;
@@ -17,6 +18,7 @@ fn main() -> Result<(), String> {
     let mut last_frame = Instant::now();
 
     let sdl = sdl2::init()?;
+    let mut audio = SoundEngine::new(&sdl);
     let video = sdl.video()?;
     let window = video
         .window(
@@ -39,11 +41,11 @@ fn main() -> Result<(), String> {
     let mut event_pump = sdl.event_pump().map_err(|e| e.to_string())?;
 
     // Apply initial green phase before the first vehicle tick.
-    traffic_lights.update(&mut sim, 0.0);
+    let _ = traffic_lights.update(&mut sim, 0.0);
 
     'running: loop {
         for event in event_pump.poll_iter() {
-            if input.handle_event(&mut sim, event) == InputAction::Quit {
+            if input.handle_event(&mut sim, &mut audio, event) == InputAction::Quit {
                 break 'running;
             }
         }
@@ -53,7 +55,9 @@ fn main() -> Result<(), String> {
         last_frame = now;
 
         // input → lights → vehicles → draw
-        traffic_lights.update(&mut sim, dt);
+        if traffic_lights.update(&mut sim, dt) {
+            audio.play_signal_change();
+        }
         sim.update_vehicles(dt);
 
         app.draw_frame(&sim)?;

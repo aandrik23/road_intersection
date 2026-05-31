@@ -1,3 +1,4 @@
+use crate::audio::SoundEngine;
 use crate::simulation::Simulation;
 use crate::types::{
     lane_for_spawn_direction, random_route_uniform, random_vehicle_kind, RouteType, VehicleKind,
@@ -21,7 +22,12 @@ impl InputHandler {
         Self { spawn_seed: 0 }
     }
 
-    pub fn handle_event(&mut self, sim: &mut Simulation, event: Event) -> InputAction {
+    pub fn handle_event(
+        &mut self,
+        sim: &mut Simulation,
+        audio: &mut SoundEngine,
+        event: Event,
+    ) -> InputAction {
         match event {
             Event::Quit { .. } => InputAction::Quit,
             Event::KeyDown {
@@ -33,8 +39,16 @@ impl InputHandler {
                 keycode: Some(key),
                 repeat: false,
                 ..
+            } if key == Keycode::M => {
+                audio.toggle_mute();
+                InputAction::None
+            }
+            Event::KeyDown {
+                keycode: Some(key),
+                repeat: false,
+                ..
             } => {
-                try_spawn_from_key(sim, key, &mut self.spawn_seed);
+                try_spawn_from_key(sim, audio, key, &mut self.spawn_seed);
                 InputAction::None
             }
             _ => InputAction::None,
@@ -48,7 +62,12 @@ impl Default for InputHandler {
     }
 }
 
-fn try_spawn_from_key(sim: &mut Simulation, key: Keycode, seed: &mut u32) {
+fn try_spawn_from_key(
+    sim: &mut Simulation,
+    audio: &mut SoundEngine,
+    key: Keycode,
+    seed: &mut u32,
+) {
     let (lane, route, kind) = match key {
         Keycode::Up => (
             lane_for_spawn_direction(0),
@@ -82,7 +101,11 @@ fn try_spawn_from_key(sim: &mut Simulation, key: Keycode, seed: &mut u32) {
         _ => return,
     };
 
-    let _ = sim.spawn_vehicle(lane, route, kind);
+    if sim.spawn_vehicle(lane, route, kind) {
+        audio.play_spawn();
+    } else {
+        audio.play_spawn_blocked();
+    }
 }
 
 fn next_route(seed: &mut u32) -> RouteType {
@@ -134,7 +157,8 @@ mod tests {
     fn spawn_from_key_adds_vehicle() {
         let mut sim = Simulation::new();
         let mut seed = 0u32;
-        try_spawn_from_key(&mut sim, Keycode::Up, &mut seed);
+        let mut audio = SoundEngine::silent();
+        try_spawn_from_key(&mut sim, &mut audio, Keycode::Up, &mut seed);
         assert_eq!(sim.vehicles.len(), 1);
         assert_eq!(sim.vehicles[0].lane, LaneId::SouthNb);
     }
@@ -143,8 +167,9 @@ mod tests {
     fn anti_spam_blocks_back_to_back_spawn() {
         let mut sim = Simulation::new();
         let mut seed = 0u32;
-        try_spawn_from_key(&mut sim, Keycode::Up, &mut seed);
-        try_spawn_from_key(&mut sim, Keycode::Up, &mut seed);
+        let mut audio = SoundEngine::silent();
+        try_spawn_from_key(&mut sim, &mut audio, Keycode::Up, &mut seed);
+        try_spawn_from_key(&mut sim, &mut audio, Keycode::Up, &mut seed);
         assert_eq!(sim.vehicles.len(), 1);
     }
 

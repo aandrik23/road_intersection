@@ -1160,7 +1160,7 @@ fn draw_hud(canvas: &mut Canvas<Window>, sim: &Simulation) {
     draw_label_word(canvas, "1990S MODE", pad + 12, row_top + 20, 1);
 
     let mut chip_x = pad + 268;
-    for label in ["ARROWS", "R RANDOM", "ESC"] {
+    for label in ["ARROWS", "R RANDOM", "M MUTE", "ESC"] {
         chip_x += draw_chip(canvas, label, chip_x, row_top, scale) + 8;
     }
 
@@ -1173,7 +1173,7 @@ fn draw_hud(canvas: &mut Canvas<Window>, sim: &Simulation) {
     set_color(canvas, theme::HUD_MUTED.0, theme::HUD_MUTED.1, theme::HUD_MUTED.2);
     draw_label_word(
         canvas,
-        "ARROWS=SPAWN  R=RANDOM  ESC=QUIT",
+        "ARROWS=SPAWN  R=RANDOM  M=MUTE  ESC=QUIT",
         pad + 12,
         row_bottom,
         1,

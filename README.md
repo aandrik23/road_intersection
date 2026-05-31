@@ -29,6 +29,8 @@ cargo run
 
 Close the window or press **Esc** to exit.
 
+Retro sound effects (traffic-light phase change, spawn blip) use SDL2 audio — no extra libraries. If audio fails to open (e.g. headless), the sim still runs silently.
+
 ## Controls
 
 | Key | Action |
@@ -38,6 +40,7 @@ Close the window or press **Esc** to exit.
 | → | Spawn from the **west**, toward the intersection |
 | ← | Spawn from the **east**, toward the intersection |
 | r | Spawn from a **random** direction |
+| m | Toggle sound **mute** |
 | Esc | Quit |
 
 Each spawn picks a random route (left / right / straight). Rapid key presses are blocked if the lane already has a vehicle too close to the spawn point (`vehicle_length + safety_gap`).
