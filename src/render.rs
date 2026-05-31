@@ -86,32 +86,55 @@ fn draw_roads(canvas: &mut Canvas<Window>) {
 
     set_color(canvas, 220, 225, 235);
 
+    let exit_nb = config::EXIT_NB_X as i32;
+    let exit_sb = config::EXIT_SB_X as i32;
+    let exit_eb = config::EXIT_EB_Y as i32;
+    let exit_wb = config::EXIT_WB_Y as i32;
+    let win_h = config::WINDOW_HEIGHT as i32;
+    let win_w = config::WINDOW_WIDTH as i32;
+
+    // Departure lane centerlines (spec: ↑ north, ↓ south, → east, ← west).
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx, margin_y),
-        sdl2::rect::Point::new(cx, cy - h),
+        sdl2::rect::Point::new(exit_nb, margin_y),
+        sdl2::rect::Point::new(exit_nb, cy - h),
     );
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx, cy + h),
-        sdl2::rect::Point::new(cx, config::WINDOW_HEIGHT as i32 - margin_y),
+        sdl2::rect::Point::new(exit_sb, cy + h),
+        sdl2::rect::Point::new(exit_sb, win_h - margin_y),
     );
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(margin_x, cy),
-        sdl2::rect::Point::new(cx - h, cy),
+        sdl2::rect::Point::new(cx + h, exit_eb),
+        sdl2::rect::Point::new(win_w - margin_x, exit_eb),
     );
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx + h, cy),
-        sdl2::rect::Point::new(config::WINDOW_WIDTH as i32 - margin_x, cy),
+        sdl2::rect::Point::new(margin_x, exit_wb),
+        sdl2::rect::Point::new(cx - h, exit_wb),
     );
 
     set_color(canvas, 40, 42, 48);
-    fill_rect(canvas, cx - 2, margin_y, 4, (config::WINDOW_HEIGHT as i32 - margin_y * 2) as u32);
-    fill_rect(canvas, margin_x, cy - 2, (config::WINDOW_WIDTH as i32 - margin_x * 2) as u32, 4);
+    fill_rect(
+        canvas,
+        cx - 2,
+        margin_y,
+        4,
+        (config::WINDOW_HEIGHT as i32 - margin_y * 2) as u32,
+    );
+    fill_rect(
+        canvas,
+        margin_x,
+        cy - 2,
+        (config::WINDOW_WIDTH as i32 - margin_x * 2) as u32,
+        4,
+    );
 }
 
 fn draw_stop_lines(canvas: &mut Canvas<Window>, sim: &Simulation) {
     set_color(canvas, 240, 240, 240);
     for lane_id in LaneId::ALL {
         let lane = sim.world.lane(lane_id);
+        if !lane.inbound {
+            continue;
+        }
         let sx = lane.stop_line.x as i32;
         let sy = lane.stop_line.y as i32;
         if lane.heading == 90.0 || lane.heading == 270.0 {
@@ -152,53 +175,67 @@ fn draw_intersection_box(canvas: &mut Canvas<Window>) {
     let _ = canvas.draw_rect(Rect::new(x, y, s, s));
 }
 
-fn draw_traffic_light(
-    canvas: &mut Canvas<Window>,
-    x: i32,
-    y: i32,
-    state: SignalState,
-    vertical: bool,
-) {
-    set_color(canvas, 15, 16, 20);
-
-    if vertical {
-        fill_rect(canvas, x - 10, y - 22, 20, 44);
-
-        if state == SignalState::Red {
-            set_color(canvas, 235, 45, 55);
-        } else {
-            set_color(canvas, 45, 45, 48);
-        }
-        fill_circle(canvas, x, y - 10, 7);
-
-        if state == SignalState::Green {
-            set_color(canvas, 35, 220, 75);
-        } else {
-            set_color(canvas, 45, 45, 48);
-        }
-        fill_circle(canvas, x, y + 10, 7);
+fn lamp_color(active: bool, green: bool) -> (u8, u8, u8) {
+    if !active {
+        return (42, 44, 50);
+    }
+    if green {
+        (40, 210, 80)
     } else {
-        fill_rect(canvas, x - 22, y - 10, 44, 20);
-
-        if state == SignalState::Red {
-            set_color(canvas, 235, 45, 55);
-        } else {
-            set_color(canvas, 45, 45, 48);
-        }
-        fill_circle(canvas, x - 10, y, 7);
-
-        if state == SignalState::Green {
-            set_color(canvas, 35, 220, 75);
-        } else {
-            set_color(canvas, 45, 45, 48);
-        }
-        fill_circle(canvas, x + 10, y, 7);
+        (235, 50, 60)
     }
 }
 
+fn draw_traffic_light(canvas: &mut Canvas<Window>, lane: LaneId, x: i32, y: i32, state: SignalState) {
+    let red_on = state == SignalState::Red;
+    let green_on = state == SignalState::Green;
+    let spacing = 11;
+    let lamp_r = 5;
+
+    // Compact side-mounted signal: thin outline + two lamps (no solid block on the lane).
+    set_color(canvas, 55, 58, 66);
+    match lane {
+        LaneId::NorthSb | LaneId::SouthNb => {
+            let _ = canvas.draw_rect(Rect::new(
+                x - 6,
+                y - spacing - lamp_r - 2,
+                12,
+                (spacing * 2 + lamp_r * 2 + 4) as u32,
+            ));
+            set_color(canvas, 70, 72, 80);
+            fill_rect(canvas, x - 1, y - spacing - 4, 2, (spacing * 2 + 8) as u32);
+        }
+        LaneId::WestEb | LaneId::EastWb => {
+            let _ = canvas.draw_rect(Rect::new(
+                x - spacing - lamp_r - 2,
+                y - 6,
+                (spacing * 2 + lamp_r * 2 + 4) as u32,
+                12,
+            ));
+            set_color(canvas, 70, 72, 80);
+            fill_rect(canvas, x - spacing - 4, y - 1, (spacing * 2 + 8) as u32, 2);
+        }
+        _ => return,
+    }
+
+    let (rx, ry, gx, gy) = match lane {
+        LaneId::NorthSb => (x, y - spacing, x, y + spacing),
+        LaneId::SouthNb => (x, y + spacing, x, y - spacing),
+        LaneId::WestEb => (x - spacing, y, x + spacing, y),
+        LaneId::EastWb => (x + spacing, y, x - spacing, y),
+        _ => return,
+    };
+
+    let (cr, cg, cb) = lamp_color(red_on, false);
+    set_color(canvas, cr, cg, cb);
+    fill_circle(canvas, rx, ry, lamp_r);
+
+    let (cr, cg, cb) = lamp_color(green_on, true);
+    set_color(canvas, cr, cg, cb);
+    fill_circle(canvas, gx, gy, lamp_r);
+}
 
 fn draw_traffic_lights(canvas: &mut Canvas<Window>, sim: &Simulation) {
-    // One signal per approach on the inbound (right-hand) lane only.
     for lane_id in LaneId::ALL {
         let lane = sim.world.lane(lane_id);
         if !lane.inbound {
@@ -208,8 +245,7 @@ fn draw_traffic_lights(canvas: &mut Canvas<Window>, sim: &Simulation) {
         let state = sim.lane_signal(lane_id);
         let x = lane.light_pos.x as i32;
         let y = lane.light_pos.y as i32;
-        let vertical = lane.heading == 90.0 || lane.heading == 270.0;
-        draw_traffic_light(canvas, x, y, state, vertical);
+        draw_traffic_light(canvas, lane_id, x, y, state);
     }
 }
 
@@ -261,26 +297,34 @@ fn draw_arrow(canvas: &mut Canvas<Window>, x: i32, y: i32, dx: i32, dy: i32) {
 }
 
 fn draw_direction_arrows(canvas: &mut Canvas<Window>) {
-    let cx = config::CENTER_X as i32;
-    let cy = config::CENTER_Y as i32;
-    let h = config::INTERSECTION_HALF as i32;
-    let lw = config::LANE_WIDTH as i32;
+    let ix0 = config::IX0 as i32;
+    let ix1 = config::IX1 as i32;
+    let iy0 = config::IY0 as i32;
+    let iy1 = config::IY1 as i32;
+    let enter_nb = config::ENTER_NB_X as i32;
+    let enter_sb = config::ENTER_SB_X as i32;
+    let enter_eb = config::ENTER_EB_Y as i32;
+    let enter_wb = config::ENTER_WB_Y as i32;
+    let margin_y = 70;
+    let margin_x = 70;
+    let win_h = config::WINDOW_HEIGHT as i32;
+    let win_w = config::WINDOW_WIDTH as i32;
 
-    draw_arrow(canvas, cx + lw / 2, 70, 0, 40);
-    draw_arrow(canvas, cx - lw / 2, config::WINDOW_HEIGHT as i32 - 70, 0, -40);
-    draw_arrow(canvas, 70, cy - lw / 2, 40, 0);
-    draw_arrow(
-        canvas,
-        config::WINDOW_WIDTH as i32 - 70,
-        cy + lw / 2,
-        -40,
-        0,
-    );
+    // Enter-lane arrows matching the spec diagram (↓ ↑ ← →).
+    // From north (southbound ↓) on west lane.
+    draw_arrow(canvas, enter_sb, margin_y, 0, 40);
+    // From south (northbound ↑) on east lane.
+    draw_arrow(canvas, enter_nb, win_h - margin_y, 0, -40);
+    // From west (eastbound →) on south row.
+    draw_arrow(canvas, margin_x, enter_eb, 40, 0);
+    // From east (westbound ←) on north row.
+    draw_arrow(canvas, win_w - margin_x, enter_wb, -40, 0);
 
-    draw_arrow(canvas, cx + lw / 2, cy - h - 50, 0, 30);
-    draw_arrow(canvas, cx - lw / 2, cy + h + 50, 0, -30);
-    draw_arrow(canvas, cx + h + 50, cy - lw / 2, -30, 0);
-    draw_arrow(canvas, cx - h - 50, cy + lw / 2, 30, 0);
+    // Near the stop line, same directions.
+    draw_arrow(canvas, enter_sb, iy0 - 50, 0, 30);
+    draw_arrow(canvas, enter_nb, iy1 + 50, 0, -30);
+    draw_arrow(canvas, ix0 - 50, enter_eb, 30, 0);
+    draw_arrow(canvas, ix1 + 50, enter_wb, -30, 0);
 }
 
 fn draw_label_char(canvas: &mut Canvas<Window>, ch: char, x: i32, y: i32, scale: i32) {

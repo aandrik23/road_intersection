@@ -10,7 +10,7 @@ Greenfield project: SDL2 recommended. Split below minimizes blocking: **Person 1
 
 - [x] Pick language, build system, and SDL2 setup (window, loop, delta time).
 - [x] Define constants: `vehicle_length`, `safety_gap`, simulation units (pixels or meters).
-- [x] Agree on lane identifiers: four approaches × two directions = **8 entry lanes** (one lane per direction per road arm).
+- [x] Agree on lane identifiers: four approaches × two directions = **8 lanes** (4 enter + 4 exit); **4 inbound** lanes where traffic enters the intersection.
 - [x] Agree on route enum: `LEFT`, `RIGHT`, `STRAIGHT` (fixed at spawn, never changes).
 - [x] Document color → route mapping for audit (e.g. yellow = right, blue = left, green = straight).
 - [x] Integration contract (headers/APIs): lane geometry, spawn points, stop lines, traffic-light state per lane, vehicle list updates.
@@ -64,7 +64,7 @@ Greenfield project: SDL2 recommended. Split below minimizes blocking: **Person 1
 
 ### Traffic lights
 
-- [x] One signal per lane where traffic **enters** the intersection (8 lights).
+- [x] One signal per approach where traffic **enters** the intersection (4 lights on inbound lanes).
 - [x] Colors: **red** and **green** only (no yellow required).
 - [x] Render state (coordinate with Person 1’s light positions).
 - [x] Vehicles must see per-lane signal state (API: e.g. `is_green(lane_id)`).
@@ -94,7 +94,7 @@ Greenfield project: SDL2 recommended. Split below minimizes blocking: **Person 1
 
 - [x] No two conflicting lanes green at the same time.
 - [x] Green extension (or equivalent) triggers when a lane hits capacity.
-- [x] All 8 entry lanes have a controllable red/green state visible in the sim.
+- [x] All 4 inbound lanes have a controllable red/green state visible in the sim.
 
 ---
 
@@ -136,23 +136,23 @@ Greenfield project: SDL2 recommended. Split below minimizes blocking: **Person 1
 
 - [x] Vehicle module (`src/vehicle.rs`).
 - [x] Input handler (`src/input.rs`).
-- [ ] Color–route legend (for audit).
+- [x] Color–route legend (for audit) — `docs/ROUTE_COLORS.md` + README table.
 
 ### Acceptance criteria
 
-- [ ] Spawn keys work for all four directions + random; Esc quits.
-- [ ] Rapid key presses do not create overlapping or unsafe spawns.
-- [ ] Cars stop for red and for a stopped car ahead.
-- [ ] Cars complete left/right/straight paths without cutting through invalid areas.
+- [x] Spawn keys work for all four directions + random; Esc quits.
+- [x] Rapid key presses do not create overlapping or unsafe spawns.
+- [x] Cars stop for red and for a stopped car ahead.
+- [x] Cars complete left/right/straight paths without cutting through invalid areas.
 
 ---
 
 ## Integration checklist (when all three merge)
 
-- [ ] Person 1 draws world + cars; Person 2 updates lights each tick; Person 3 updates cars each tick — order documented (e.g. input → vehicles → lights → draw). *(vehicles → lights → draw in `main.rs`; input step missing)*
-- [ ] End-to-end: spawn from each direction, random routes, lights cycle, queues grow, green extends under congestion.
-- [ ] No crashes at intersection under normal load.
-- [ ] README: build/run, controls, color legend, light algorithm summary.
+- [x] Person 1 draws world + cars; Person 2 updates lights each tick; Person 3 updates cars each tick — order: **input → vehicles → lights → draw** (`main.rs`).
+- [ ] End-to-end manual check: spawn from each direction, random routes, lights cycle, queues grow, green extends under congestion.
+- [ ] No crashes at intersection under normal load (manual / stress test).
+- [x] README: build/run, controls, color legend, light algorithm summary.
 
 ---
 

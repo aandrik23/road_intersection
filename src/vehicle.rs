@@ -231,6 +231,20 @@ mod tests {
     }
 
     #[test]
+    fn south_spawn_uses_right_hand_enter_lane() {
+        let world = World::new();
+        let spawn = world.lane(LaneId::SouthNb).spawn;
+        assert!((spawn.x - config::ENTER_NB_X).abs() < 0.01);
+    }
+
+    #[test]
+    fn north_spawn_uses_right_hand_enter_lane() {
+        let world = World::new();
+        let spawn = world.lane(LaneId::NorthSb).spawn;
+        assert!((spawn.x - config::ENTER_SB_X).abs() < 0.01);
+    }
+
+    #[test]
     fn red_light_holds_before_stop_line() {
         let world = World::new();
         let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);

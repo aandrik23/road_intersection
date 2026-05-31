@@ -110,152 +110,139 @@ fn setup_lane(
 }
 
 fn init_lanes(world: &mut World) {
-    let cx = config::CENTER_X;
-    let cy = config::CENTER_Y;
-    let h = config::INTERSECTION_HALF;
-    let lw = config::LANE_WIDTH;
     let arm = config::ARM_LENGTH;
+    let ix0 = config::IX0;
+    let ix1 = config::IX1;
+    let iy0 = config::IY0;
+    let iy1 = config::IY1;
+    let er_nb = config::ENTER_NB_X;
+    let er_sb = config::ENTER_SB_X;
+    let er_eb = config::ENTER_EB_Y;
+    let er_wb = config::ENTER_WB_Y;
+    let ex_nb = config::EXIT_NB_X;
+    let ex_sb = config::EXIT_SB_X;
+    let ex_eb = config::EXIT_EB_Y;
+    let ex_wb = config::EXIT_WB_Y;
 
+    // Inbound lanes (spec diagram enter arrows).
     setup_lane(
         &mut world.lanes,
         LaneId::NorthSb,
         Vec2 {
-            x: cx + lw * 0.5,
-            y: cy - h - arm,
+            x: er_sb,
+            y: iy0 - arm,
         },
+        Vec2 { x: er_sb, y: iy0 },
         Vec2 {
-            x: cx + lw * 0.5,
-            y: cy - h,
-        },
-        Vec2 {
-            x: cx + lw * 0.5,
-            y: cy - h - 18.0,
+            x: er_sb - config::TRAFFIC_LIGHT_SIDE_OFFSET,
+            y: iy0 - config::TRAFFIC_LIGHT_STOP_OFFSET,
         },
         90.0,
         true,
-    );
-    setup_lane(
-        &mut world.lanes,
-        LaneId::NorthNb,
-        Vec2 {
-            x: cx - lw * 0.5,
-            y: cy - h - arm,
-        },
-        Vec2 {
-            x: cx - lw * 0.5,
-            y: cy - h,
-        },
-        Vec2 {
-            x: cx - lw * 0.5,
-            y: cy - h - 18.0,
-        },
-        270.0,
-        false,
     );
     setup_lane(
         &mut world.lanes,
         LaneId::SouthNb,
         Vec2 {
-            x: cx - lw * 0.5,
-            y: cy + h + arm,
+            x: er_nb,
+            y: iy1 + arm,
         },
+        Vec2 { x: er_nb, y: iy1 },
         Vec2 {
-            x: cx - lw * 0.5,
-            y: cy + h,
-        },
-        Vec2 {
-            x: cx - lw * 0.5,
-            y: cy + h + 18.0,
+            x: er_nb + config::TRAFFIC_LIGHT_SIDE_OFFSET,
+            y: iy1 + config::TRAFFIC_LIGHT_STOP_OFFSET,
         },
         270.0,
         true,
     );
     setup_lane(
         &mut world.lanes,
+        LaneId::WestEb,
+        Vec2 {
+            x: ix0 - arm,
+            y: er_eb,
+        },
+        Vec2 { x: ix0, y: er_eb },
+        Vec2 {
+            x: ix0 - config::TRAFFIC_LIGHT_STOP_OFFSET,
+            y: er_eb + config::TRAFFIC_LIGHT_SIDE_OFFSET,
+        },
+        0.0,
+        true,
+    );
+    setup_lane(
+        &mut world.lanes,
+        LaneId::EastWb,
+        Vec2 {
+            x: ix1 + arm,
+            y: er_wb,
+        },
+        Vec2 { x: ix1, y: er_wb },
+        Vec2 {
+            x: ix1 + config::TRAFFIC_LIGHT_STOP_OFFSET,
+            y: er_wb - config::TRAFFIC_LIGHT_SIDE_OFFSET,
+        },
+        180.0,
+        true,
+    );
+
+    // Outbound lanes (spec diagram departures on the opposite track).
+    setup_lane(
+        &mut world.lanes,
+        LaneId::NorthNb,
+        Vec2 {
+            x: ex_nb,
+            y: iy0 - arm,
+        },
+        Vec2 { x: ex_nb, y: iy0 },
+        Vec2 {
+            x: ex_nb,
+            y: iy0 - 18.0,
+        },
+        270.0,
+        false,
+    );
+    setup_lane(
+        &mut world.lanes,
         LaneId::SouthSb,
         Vec2 {
-            x: cx + lw * 0.5,
-            y: cy + h + arm,
+            x: ex_sb,
+            y: iy1 + arm,
         },
+        Vec2 { x: ex_sb, y: iy1 },
         Vec2 {
-            x: cx + lw * 0.5,
-            y: cy + h,
-        },
-        Vec2 {
-            x: cx + lw * 0.5,
-            y: cy + h + 18.0,
+            x: ex_sb,
+            y: iy1 + 18.0,
         },
         90.0,
         false,
     );
     setup_lane(
         &mut world.lanes,
-        LaneId::EastWb,
-        Vec2 {
-            x: cx + h + arm,
-            y: cy - lw * 0.5,
-        },
-        Vec2 {
-            x: cx + h,
-            y: cy - lw * 0.5,
-        },
-        Vec2 {
-            x: cx + h + 18.0,
-            y: cy - lw * 0.5,
-        },
-        180.0,
-        true,
-    );
-    setup_lane(
-        &mut world.lanes,
         LaneId::EastEb,
         Vec2 {
-            x: cx + h + arm,
-            y: cy + lw * 0.5,
+            x: ix1 + arm,
+            y: ex_eb,
         },
+        Vec2 { x: ix1, y: ex_eb },
         Vec2 {
-            x: cx + h,
-            y: cy + lw * 0.5,
-        },
-        Vec2 {
-            x: cx + h + 18.0,
-            y: cy + lw * 0.5,
+            x: ix1 + 18.0,
+            y: ex_eb,
         },
         0.0,
         false,
     );
     setup_lane(
         &mut world.lanes,
-        LaneId::WestEb,
-        Vec2 {
-            x: cx - h - arm,
-            y: cy + lw * 0.5,
-        },
-        Vec2 {
-            x: cx - h,
-            y: cy + lw * 0.5,
-        },
-        Vec2 {
-            x: cx - h - 18.0,
-            y: cy + lw * 0.5,
-        },
-        0.0,
-        true,
-    );
-    setup_lane(
-        &mut world.lanes,
         LaneId::WestWb,
         Vec2 {
-            x: cx - h - arm,
-            y: cy - lw * 0.5,
+            x: ix0 - arm,
+            y: ex_wb,
         },
+        Vec2 { x: ix0, y: ex_wb },
         Vec2 {
-            x: cx - h,
-            y: cy - lw * 0.5,
-        },
-        Vec2 {
-            x: cx - h - 18.0,
-            y: cy - lw * 0.5,
+            x: ix0 - 18.0,
+            y: ex_wb,
         },
         180.0,
         false,
@@ -301,141 +288,164 @@ fn set_route(world: &mut World, lane: LaneId, route: RouteType, path: RoutePath)
 }
 
 fn build_paths_for_lane(world: &mut World, lane: LaneId) {
-    let cx = config::CENTER_X;
-    let cy = config::CENTER_Y;
-    let h = config::INTERSECTION_HALF;
-    let lw = config::LANE_WIDTH;
     let arm = config::ARM_LENGTH;
-
-    let n_sb_x = cx + lw * 0.5;
-    let n_nb_x = cx - lw * 0.5;
-    let s_nb_x = cx - lw * 0.5;
-    let s_sb_x = cx + lw * 0.5;
-    let e_wb_y = cy - lw * 0.5;
-    let e_eb_y = cy + lw * 0.5;
-    let w_eb_y = cy + lw * 0.5;
-    let w_wb_y = cy - lw * 0.5;
+    let ix0 = config::IX0;
+    let ix1 = config::IX1;
+    let iy0 = config::IY0;
+    let iy1 = config::IY1;
+    let er_nb = config::ENTER_NB_X;
+    let er_sb = config::ENTER_SB_X;
+    let er_eb = config::ENTER_EB_Y;
+    let er_wb = config::ENTER_WB_Y;
+    let ex_nb = config::EXIT_NB_X;
+    let ex_sb = config::EXIT_SB_X;
+    let ex_eb = config::EXIT_EB_Y;
+    let ex_wb = config::EXIT_WB_Y;
 
     let mut straight = PathBuilder::new(lane, RouteType::Straight);
     let mut left = PathBuilder::new(lane, RouteType::Left);
     let mut right = PathBuilder::new(lane, RouteType::Right);
 
     match lane {
+        // From north, southbound ↓ on west lane.
         LaneId::NorthSb => {
-            straight.push(Vec2 { x: n_sb_x, y: cy - h });
-            straight.push(Vec2 { x: n_sb_x, y: cy + h });
-            straight.push(Vec2 { x: n_sb_x, y: cy + h + arm });
-            left.push(Vec2 { x: n_sb_x, y: cy - h });
-            left.push(Vec2 { x: cx + h, y: cy - h });
-            left.push(Vec2 { x: cx + h, y: e_eb_y });
-            left.push(Vec2 { x: cx + h + arm, y: e_eb_y });
-            right.push(Vec2 { x: n_sb_x, y: cy - h });
-            right.push(Vec2 { x: cx - h, y: cy - h });
-            right.push(Vec2 { x: cx - h, y: w_wb_y });
-            right.push(Vec2 { x: cx - h - arm, y: w_wb_y });
+            let stop = Vec2 { x: er_sb, y: iy0 };
+            straight.push(stop);
+            straight.push(Vec2 { x: er_sb, y: iy1 });
+            straight.push(Vec2 {
+                x: ex_sb,
+                y: iy1 + arm,
+            });
+            left.push(stop);
+            left.push(Vec2 { x: er_sb, y: iy1 });
+            left.push(Vec2 { x: ix1, y: iy1 });
+            left.push(Vec2 { x: ix1, y: ex_eb });
+            left.push(Vec2 {
+                x: ix1 + arm,
+                y: ex_eb,
+            });
+            right.push(stop);
+            right.push(Vec2 { x: ix0, y: iy0 });
+            right.push(Vec2 { x: ix0, y: ex_wb });
+            right.push(Vec2 {
+                x: ix0 - arm,
+                y: ex_wb,
+            });
         }
+        // From south, northbound ↑ on east lane.
         LaneId::SouthNb => {
-            straight.push(Vec2 { x: s_nb_x, y: cy + h });
-            straight.push(Vec2 { x: s_nb_x, y: cy - h });
-            straight.push(Vec2 { x: s_nb_x, y: cy - h - arm });
-            left.push(Vec2 { x: s_nb_x, y: cy + h });
-            left.push(Vec2 { x: cx - h, y: cy + h });
-            left.push(Vec2 { x: cx - h, y: w_wb_y });
-            left.push(Vec2 { x: cx - h - arm, y: w_wb_y });
-            right.push(Vec2 { x: s_nb_x, y: cy + h });
-            right.push(Vec2 { x: cx + h, y: cy + h });
-            right.push(Vec2 { x: cx + h, y: e_eb_y });
-            right.push(Vec2 { x: cx + h + arm, y: e_eb_y });
+            let stop = Vec2 { x: er_nb, y: iy1 };
+            straight.push(stop);
+            straight.push(Vec2 { x: er_nb, y: iy0 });
+            straight.push(Vec2 {
+                x: ex_nb,
+                y: iy0 - arm,
+            });
+            left.push(stop);
+            left.push(Vec2 { x: er_nb, y: iy0 });
+            left.push(Vec2 { x: ix0, y: iy0 });
+            left.push(Vec2 { x: ix0, y: ex_wb });
+            left.push(Vec2 {
+                x: ix0 - arm,
+                y: ex_wb,
+            });
+            right.push(stop);
+            right.push(Vec2 { x: ix1, y: iy1 });
+            right.push(Vec2 { x: ix1, y: ex_eb });
+            right.push(Vec2 {
+                x: ix1 + arm,
+                y: ex_eb,
+            });
         }
+        // From west, eastbound → on south row.
         LaneId::WestEb => {
-            straight.push(Vec2 { x: cx - h, y: w_eb_y });
-            straight.push(Vec2 { x: cx + h, y: w_eb_y });
-            straight.push(Vec2 { x: cx + h + arm, y: w_eb_y });
-            left.push(Vec2 { x: cx - h, y: w_eb_y });
-            left.push(Vec2 { x: cx - h, y: cy - h });
-            left.push(Vec2 { x: n_nb_x, y: cy - h });
-            left.push(Vec2 { x: n_nb_x, y: cy - h - arm });
-            right.push(Vec2 { x: cx - h, y: w_eb_y });
-            right.push(Vec2 { x: cx - h, y: cy + h });
-            right.push(Vec2 { x: s_sb_x, y: cy + h });
-            right.push(Vec2 { x: s_sb_x, y: cy + h + arm });
+            let stop = Vec2 { x: ix0, y: er_eb };
+            straight.push(stop);
+            straight.push(Vec2 { x: ix1, y: er_eb });
+            straight.push(Vec2 {
+                x: ix1 + arm,
+                y: ex_eb,
+            });
+            left.push(stop);
+            left.push(Vec2 { x: ix1, y: er_eb });
+            left.push(Vec2 { x: ix1, y: iy0 });
+            left.push(Vec2 { x: ex_nb, y: iy0 });
+            left.push(Vec2 {
+                x: ex_nb,
+                y: iy0 - arm,
+            });
+            right.push(stop);
+            right.push(Vec2 { x: ix0, y: iy1 });
+            right.push(Vec2 { x: ex_sb, y: iy1 });
+            right.push(Vec2 {
+                x: ex_sb,
+                y: iy1 + arm,
+            });
         }
+        // From east, westbound ← on north row.
         LaneId::EastWb => {
-            straight.push(Vec2 { x: cx + h, y: e_wb_y });
-            straight.push(Vec2 { x: cx - h, y: e_wb_y });
-            straight.push(Vec2 { x: cx - h - arm, y: e_wb_y });
-            left.push(Vec2 { x: cx + h, y: e_wb_y });
-            left.push(Vec2 { x: cx + h, y: cy + h });
-            left.push(Vec2 { x: s_sb_x, y: cy + h });
-            left.push(Vec2 { x: s_sb_x, y: cy + h + arm });
-            right.push(Vec2 { x: cx + h, y: e_wb_y });
-            right.push(Vec2 { x: cx + h, y: cy - h });
-            right.push(Vec2 { x: n_nb_x, y: cy - h });
-            right.push(Vec2 { x: n_nb_x, y: cy - h - arm });
+            let stop = Vec2 { x: ix1, y: er_wb };
+            straight.push(stop);
+            straight.push(Vec2 { x: ix0, y: er_wb });
+            straight.push(Vec2 {
+                x: ix0 - arm,
+                y: ex_wb,
+            });
+            left.push(stop);
+            left.push(Vec2 { x: ix0, y: er_wb });
+            left.push(Vec2 { x: ix0, y: iy1 });
+            left.push(Vec2 { x: ex_sb, y: iy1 });
+            left.push(Vec2 {
+                x: ex_sb,
+                y: iy1 + arm,
+            });
+            right.push(stop);
+            right.push(Vec2 { x: ix1, y: iy0 });
+            right.push(Vec2 { x: ex_nb, y: iy0 });
+            right.push(Vec2 {
+                x: ex_nb,
+                y: iy0 - arm,
+            });
         }
         LaneId::NorthNb => {
             straight.push(Vec2 {
-                x: n_nb_x,
-                y: cy - h - arm * 0.35,
+                x: ex_nb,
+                y: iy0 - arm * 0.35,
             });
             straight.push(Vec2 {
-                x: n_nb_x,
-                y: cy - h - arm,
+                x: ex_nb,
+                y: iy0 - arm,
             });
-            left.push(Vec2 { x: n_nb_x, y: cy - h });
-            left.push(Vec2 { x: cx - h, y: cy - h });
-            left.push(Vec2 { x: cx - h, y: w_wb_y });
-            right.push(Vec2 { x: n_nb_x, y: cy - h });
-            right.push(Vec2 { x: cx + h, y: cy - h });
-            right.push(Vec2 { x: cx + h, y: e_eb_y });
         }
         LaneId::SouthSb => {
             straight.push(Vec2 {
-                x: s_sb_x,
-                y: cy + h + arm * 0.35,
+                x: ex_sb,
+                y: iy1 + arm * 0.35,
             });
             straight.push(Vec2 {
-                x: s_sb_x,
-                y: cy + h + arm,
+                x: ex_sb,
+                y: iy1 + arm,
             });
-            left.push(Vec2 { x: s_sb_x, y: cy + h });
-            left.push(Vec2 { x: cx + h, y: cy + h });
-            left.push(Vec2 { x: cx + h, y: e_eb_y });
-            right.push(Vec2 { x: s_sb_x, y: cy + h });
-            right.push(Vec2 { x: cx - h, y: cy + h });
-            right.push(Vec2 { x: cx - h, y: w_wb_y });
         }
         LaneId::EastEb => {
             straight.push(Vec2 {
-                x: cx + h + arm * 0.35,
-                y: e_eb_y,
+                x: ix1 + arm * 0.35,
+                y: ex_eb,
             });
             straight.push(Vec2 {
-                x: cx + h + arm,
-                y: e_eb_y,
+                x: ix1 + arm,
+                y: ex_eb,
             });
-            left.push(Vec2 { x: cx + h, y: e_eb_y });
-            left.push(Vec2 { x: cx + h, y: cy + h });
-            left.push(Vec2 { x: s_sb_x, y: cy + h });
-            right.push(Vec2 { x: cx + h, y: e_eb_y });
-            right.push(Vec2 { x: cx + h, y: cy - h });
-            right.push(Vec2 { x: n_nb_x, y: cy - h });
         }
         LaneId::WestWb => {
             straight.push(Vec2 {
-                x: cx - h - arm * 0.35,
-                y: w_wb_y,
+                x: ix0 - arm * 0.35,
+                y: ex_wb,
             });
             straight.push(Vec2 {
-                x: cx - h - arm,
-                y: w_wb_y,
+                x: ix0 - arm,
+                y: ex_wb,
             });
-            left.push(Vec2 { x: cx - h, y: w_wb_y });
-            left.push(Vec2 { x: cx - h, y: cy - h });
-            left.push(Vec2 { x: n_nb_x, y: cy - h });
-            right.push(Vec2 { x: cx - h, y: w_wb_y });
-            right.push(Vec2 { x: cx - h, y: cy + h });
-            right.push(Vec2 { x: s_sb_x, y: cy + h });
         }
     }
 
