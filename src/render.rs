@@ -93,6 +93,30 @@ fn fill_circle(canvas: &mut Canvas<Window>, cx: i32, cy: i32, radius: i32) {
     }
 }
 
+/// Rounds the four inner "+" corners so the junction reads as one intersection, not overlapping squares.
+fn fill_road_corner_fillets(canvas: &mut Canvas<Window>, cx: i32, cy: i32, road_half: i32, radius: i32) {
+    let r2 = radius * radius;
+    let corners = [
+        (cx + road_half, cy - road_half, 1, -1),  // NE
+        (cx - road_half, cy - road_half, -1, -1), // NW
+        (cx + road_half, cy + road_half, 1, 1),   // SE
+        (cx - road_half, cy + road_half, -1, 1),  // SW
+    ];
+
+    for (corner_x, corner_y, dx, dy) in corners {
+        for oy in 0..=radius {
+            for ox in 0..=radius {
+                if ox * ox + oy * oy > r2 {
+                    continue;
+                }
+                let px = corner_x + ox * dx;
+                let py = corner_y + oy * dy;
+                let _ = canvas.draw_point(Point::new(px, py));
+            }
+        }
+    }
+}
+
 /// Classic raised UI box (SNES / Win95 menu style).
 fn draw_retro_box(canvas: &mut Canvas<Window>, x: i32, y: i32, w: u32, h: u32, fill: (u8, u8, u8)) {
     set_color(canvas, fill.0, fill.1, fill.2);
@@ -209,13 +233,15 @@ fn draw_roads(canvas: &mut Canvas<Window>, play_h: i32) {
         (road_half * 2) as u32,
     );
 
+    // Smooth the four re-entrant corners where the arms meet (no square "+" notches).
     set_color(
         canvas,
         theme::INTERSECTION.0,
         theme::INTERSECTION.1,
         theme::INTERSECTION.2,
     );
-    fill_rect(canvas, cx - h, cy - h, (h * 2) as u32, (h * 2) as u32);
+    let fillet = (road_half + 6).min(h - 8);
+    fill_road_corner_fillets(canvas, cx, cy, road_half, fillet);
 
     set_color(
         canvas,
@@ -395,14 +421,6 @@ fn draw_intersection_zone(canvas: &mut Canvas<Window>) {
     let s = (config::INTERSECTION_HALF * 2.0) as u32;
     let cx = config::CENTER_X as i32;
     let cy = config::CENTER_Y as i32;
-
-    set_color(
-        canvas,
-        theme::INTERSECTION.0,
-        theme::INTERSECTION.1,
-        theme::INTERSECTION.2,
-    );
-    fill_rect(canvas, x, y, s, s);
 
     set_color(
         canvas,
