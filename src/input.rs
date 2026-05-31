@@ -1,5 +1,5 @@
 use crate::simulation::Simulation;
-use crate::types::{lane_for_spawn_direction, random_route_uniform};
+use crate::types::{lane_for_spawn_direction, random_route_uniform, random_vehicle_kind};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
@@ -65,7 +65,9 @@ fn try_spawn_from_key(sim: &mut Simulation, key: Keycode, seed: &mut u32) {
 
     *seed = seed.wrapping_add(1);
     let route = random_route_uniform(*seed);
-    let _ = sim.spawn_vehicle(lane, route);
+    *seed = seed.wrapping_add(1);
+    let kind = random_vehicle_kind(*seed);
+    let _ = sim.spawn_vehicle(lane, route, kind);
 }
 
 #[cfg(test)]

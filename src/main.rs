@@ -20,7 +20,7 @@ fn main() -> Result<(), String> {
     let video = sdl.video()?;
     let window = video
         .window(
-            "Road Intersection — Traffic Sim",
+            "Traffic Intersection",
             road_intersection::config::WINDOW_WIDTH,
             road_intersection::config::WINDOW_HEIGHT,
         )
@@ -35,7 +35,7 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut app = AppRenderer::new(canvas);
+    let mut app = AppRenderer::new(canvas)?;
     let mut event_pump = sdl.event_pump().map_err(|e| e.to_string())?;
 
     // Apply initial green phase before the first vehicle tick.

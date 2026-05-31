@@ -17,6 +17,20 @@ impl RouteType {
     pub const ALL: [RouteType; 3] = [RouteType::Left, RouteType::Right, RouteType::Straight];
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VehicleKind {
+    Car,
+    Motorcycle,
+}
+
+pub fn random_vehicle_kind(seed: u32) -> VehicleKind {
+    if seed % 4 == 0 {
+        VehicleKind::Motorcycle
+    } else {
+        VehicleKind::Car
+    }
+}
+
 /// Eight lanes: four road arms × two directions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LaneId {
@@ -79,19 +93,19 @@ pub struct ColorRgb {
 pub fn route_color(route: RouteType) -> ColorRgb {
     match route {
         RouteType::Left => ColorRgb {
-            r: 60,
-            g: 140,
-            b: 255,
+            r: 0,
+            g: 112,
+            b: 236,
         },
         RouteType::Right => ColorRgb {
-            r: 255,
-            g: 210,
-            b: 40,
+            r: 236,
+            g: 188,
+            b: 0,
         },
         RouteType::Straight => ColorRgb {
-            r: 50,
-            g: 200,
-            b: 90,
+            r: 0,
+            g: 168,
+            b: 0,
         },
     }
 }

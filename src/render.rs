@@ -1,51 +1,50 @@
 use crate::config;
 use crate::simulation::Simulation;
-use crate::types::{route_color, LaneId, RouteType, SignalState};
+use crate::sprites::SpriteAtlas;
+use crate::types::{route_color, LaneId, RouteType, SignalState, VehicleKind};
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::Canvas;
+use sdl2::rect::{Point, Rect};
+use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 
-// --- Theme (dark dashboard + asphalt) ---
+// --- 90s arcade / SNES-style palette (simple, easy on the eyes) ---
 mod theme {
-    pub const BG: (u8, u8, u8) = (18, 21, 28);
-    pub const SIDEWALK: (u8, u8, u8) = (50, 55, 64);
-    pub const CURB: (u8, u8, u8) = (72, 78, 88);
-    pub const ASPHALT: (u8, u8, u8) = (58, 63, 72);
-    pub const ASPHALT_LIGHT: (u8, u8, u8) = (68, 74, 84);
-    pub const INTERSECTION: (u8, u8, u8) = (64, 70, 80);
-    pub const INTERSECTION_GUIDE: (u8, u8, u8) = (88, 94, 108);
-    pub const KEEP_CLEAR: (u8, u8, u8) = (44, 48, 56);
-    pub const LANE_MARK: (u8, u8, u8) = (235, 198, 72);
-    pub const CENTER_DIVIDER: (u8, u8, u8) = (38, 41, 48);
-    pub const STOP_LINE: (u8, u8, u8) = (248, 250, 252);
-    pub const ARROW: (u8, u8, u8) = (200, 206, 218);
-    pub const LABEL: (u8, u8, u8) = (168, 176, 192);
-    pub const LABEL_BG: (u8, u8, u8) = (32, 36, 44);
-    pub const ROUTE_GHOST: (u8, u8, u8) = (72, 78, 90);
-    pub const CROSSWALK: (u8, u8, u8) = (230, 234, 242);
-    pub const HUD_BG: (u8, u8, u8) = (28, 32, 40);
-    pub const HUD_BORDER: (u8, u8, u8) = (56, 120, 200);
-    pub const HUD_TEXT: (u8, u8, u8) = (210, 216, 228);
-    pub const HUD_MUTED: (u8, u8, u8) = (130, 138, 154);
-    pub const LAMP_OFF: (u8, u8, u8) = (36, 40, 48);
-    pub const LAMP_RED: (u8, u8, u8) = (255, 72, 88);
-    pub const LAMP_RED_GLOW: (u8, u8, u8) = (120, 28, 38);
-    pub const LAMP_GREEN: (u8, u8, u8) = (56, 232, 120);
-    pub const LAMP_GREEN_GLOW: (u8, u8, u8) = (24, 90, 52);
-    pub const HOUSING: (u8, u8, u8) = (24, 28, 34);
-    pub const HOUSING_EDGE: (u8, u8, u8) = (70, 76, 88);
-    pub const VEHICLE_SHADOW: (u8, u8, u8) = (12, 14, 18);
-    pub const VEHICLE_OUTLINE: (u8, u8, u8) = (18, 20, 26);
+    pub const BG: (u8, u8, u8) = (56, 104, 48);
+    pub const GRASS_LIGHT: (u8, u8, u8) = (72, 128, 60);
+    pub const CURB: (u8, u8, u8) = (88, 72, 48);
+    pub const ASPHALT: (u8, u8, u8) = (72, 72, 80);
+    pub const ASPHALT_DARK: (u8, u8, u8) = (56, 56, 64);
+    pub const INTERSECTION: (u8, u8, u8) = (64, 64, 72);
+    pub const INTERSECTION_LINE: (u8, u8, u8) = (200, 200, 208);
+    pub const LANE_MARK: (u8, u8, u8) = (248, 248, 120);
+    pub const CENTER_DIVIDER: (u8, u8, u8) = (248, 248, 248);
+    pub const STOP_LINE: (u8, u8, u8) = (255, 255, 255);
+    pub const ARROW: (u8, u8, u8) = (255, 255, 255);
+    pub const LABEL: (u8, u8, u8) = (255, 255, 255);
+    pub const LABEL_BOX: (u8, u8, u8) = (0, 0, 128);
+    pub const ROUTE_GHOST: (u8, u8, u8) = (120, 120, 136);
+    pub const CROSSWALK: (u8, u8, u8) = (255, 255, 255);
+    pub const HUD_BG: (u8, u8, u8) = (0, 0, 128);
+    pub const HUD_BAR: (u8, u8, u8) = (252, 188, 0);
+    pub const HUD_TEXT: (u8, u8, u8) = (255, 255, 255);
+    pub const HUD_MUTED: (u8, u8, u8) = (180, 180, 220);
+    pub const HUD_BOX: (u8, u8, u8) = (0, 0, 168);
+    pub const BLACK: (u8, u8, u8) = (0, 0, 0);
+    pub const WHITE: (u8, u8, u8) = (255, 255, 255);
+    pub const LAMP_RED: (u8, u8, u8) = (220, 0, 0);
+    pub const LAMP_GREEN: (u8, u8, u8) = (0, 200, 0);
 }
 
 pub struct AppRenderer {
     pub canvas: Canvas<Window>,
+    sprites: SpriteAtlas,
 }
 
 impl AppRenderer {
-    pub fn new(canvas: Canvas<Window>) -> Self {
-        Self { canvas }
+    pub fn new(canvas: Canvas<Window>) -> Result<Self, String> {
+        let creator = canvas.texture_creator();
+        let sprites = SpriteAtlas::load(&creator)?;
+        Ok(Self { canvas, sprites })
     }
 
     pub fn draw_frame(&mut self, sim: &Simulation) -> Result<(), String> {
@@ -63,8 +62,8 @@ impl AppRenderer {
         draw_stop_lines(&mut self.canvas, sim);
         draw_direction_arrows(&mut self.canvas);
         draw_cardinal_labels(&mut self.canvas);
-        draw_traffic_lights(&mut self.canvas, sim);
-        draw_vehicles(&mut self.canvas, sim);
+        draw_traffic_lights(&mut self.canvas, &mut self.sprites, sim);
+        draw_vehicles(&mut self.canvas, &mut self.sprites, sim);
         draw_hud(&mut self.canvas, sim);
 
         self.canvas.present();
@@ -94,18 +93,16 @@ fn fill_circle(canvas: &mut Canvas<Window>, cx: i32, cy: i32, radius: i32) {
     }
 }
 
-fn fill_rounded_rect(canvas: &mut Canvas<Window>, x: i32, y: i32, w: u32, h: u32, radius: i32) {
-    let r = radius.min((w as i32 / 2).min(h as i32 / 2));
-    if r <= 0 {
-        fill_rect(canvas, x, y, w, h);
-        return;
-    }
-    fill_rect(canvas, x + r, y, w.saturating_sub((2 * r) as u32), h);
-    fill_rect(canvas, x, y + r, w, h.saturating_sub((2 * r) as u32));
-    fill_circle(canvas, x + r, y + r, r);
-    fill_circle(canvas, x + w as i32 - r, y + r, r);
-    fill_circle(canvas, x + r, y + h as i32 - r, r);
-    fill_circle(canvas, x + w as i32 - r, y + h as i32 - r, r);
+/// Classic raised UI box (SNES / Win95 menu style).
+fn draw_retro_box(canvas: &mut Canvas<Window>, x: i32, y: i32, w: u32, h: u32, fill: (u8, u8, u8)) {
+    set_color(canvas, fill.0, fill.1, fill.2);
+    fill_rect(canvas, x, y, w, h);
+    set_color(canvas, theme::WHITE.0, theme::WHITE.1, theme::WHITE.2);
+    fill_rect(canvas, x, y, w, 2);
+    fill_rect(canvas, x, y, 2, h);
+    set_color(canvas, theme::BLACK.0, theme::BLACK.1, theme::BLACK.2);
+    fill_rect(canvas, x, y + h as i32 - 2, w, 2);
+    fill_rect(canvas, x + w as i32 - 2, y, 2, h);
 }
 
 fn draw_dashed_line(
@@ -146,8 +143,23 @@ fn draw_dashed_line(
 }
 
 fn draw_background(canvas: &mut Canvas<Window>, play_h: i32) {
-    set_color(canvas, theme::SIDEWALK.0, theme::SIDEWALK.1, theme::SIDEWALK.2);
+    set_color(canvas, theme::BG.0, theme::BG.1, theme::BG.2);
     fill_rect(canvas, 0, 0, config::WINDOW_WIDTH, play_h as u32);
+
+    let step = 32i32;
+    set_color(
+        canvas,
+        theme::GRASS_LIGHT.0,
+        theme::GRASS_LIGHT.1,
+        theme::GRASS_LIGHT.2,
+    );
+    for gy in (0..play_h).step_by(step as usize) {
+        for gx in (0..config::WINDOW_WIDTH as i32).step_by(step as usize) {
+            if (gx / step + gy / step) % 2 == 0 {
+                fill_rect(canvas, gx + 8, gy + 8, 4, 4);
+            }
+        }
+    }
 
     let margin_x = 72;
     let margin_y = 48;
@@ -368,154 +380,82 @@ fn draw_intersection_zone(canvas: &mut Canvas<Window>) {
     );
     fill_rect(canvas, x, y, s, s);
 
-    // Keep-clear center so overlapping cars are easier to read.
-    let clear_r = (config::LANE_WIDTH * 0.55) as i32;
     set_color(
         canvas,
-        theme::KEEP_CLEAR.0,
-        theme::KEEP_CLEAR.1,
-        theme::KEEP_CLEAR.2,
+        theme::ASPHALT_DARK.0,
+        theme::ASPHALT_DARK.1,
+        theme::ASPHALT_DARK.2,
     );
-    fill_circle(canvas, cx, cy, clear_r);
+    fill_rect(canvas, cx - 2, y, 4, s);
+    fill_rect(canvas, x, cy - 2, s, 4);
 
     set_color(
         canvas,
-        theme::INTERSECTION_GUIDE.0,
-        theme::INTERSECTION_GUIDE.1,
-        theme::INTERSECTION_GUIDE.2,
-    );
-    // Lane centerlines through the box (where cars drive, not the border).
-    let _ = canvas.draw_line(
-        sdl2::rect::Point::new(cx, y),
-        sdl2::rect::Point::new(cx, y + s as i32),
+        theme::INTERSECTION_LINE.0,
+        theme::INTERSECTION_LINE.1,
+        theme::INTERSECTION_LINE.2,
     );
     let _ = canvas.draw_line(
-        sdl2::rect::Point::new(x, cy),
-        sdl2::rect::Point::new(x + s as i32, cy),
+        sdl2::rect::Point::new(cx, y + 4),
+        sdl2::rect::Point::new(cx, y + s as i32 - 4),
     );
-
-    set_color(
-        canvas,
-        theme::ASPHALT_LIGHT.0,
-        theme::ASPHALT_LIGHT.1,
-        theme::ASPHALT_LIGHT.2,
+    let _ = canvas.draw_line(
+        sdl2::rect::Point::new(x + 4, cy),
+        sdl2::rect::Point::new(x + s as i32 - 4, cy),
     );
-    let _ = canvas.draw_rect(Rect::new(x, y, s, s));
-
 }
 
-fn lamp_colors(active: bool, green: bool) -> ((u8, u8, u8), (u8, u8, u8)) {
-    if !active {
-        return (theme::LAMP_OFF, theme::LAMP_OFF);
-    }
-    if green {
-        (theme::LAMP_GREEN_GLOW, theme::LAMP_GREEN)
-    } else {
-        (theme::LAMP_RED_GLOW, theme::LAMP_RED)
+/// Orient pole toward the intersection and red lens above green for each approach.
+fn signal_sprite_rotation(lane: LaneId) -> f64 {
+    match lane {
+        LaneId::NorthSb => 180.0,
+        LaneId::SouthNb => 0.0,
+        LaneId::WestEb => 90.0,
+        LaneId::EastWb => 270.0,
+        _ => 0.0,
     }
 }
 
-fn draw_traffic_light(
+fn draw_traffic_light_sprite(
     canvas: &mut Canvas<Window>,
+    sprites: &mut SpriteAtlas,
     lane: LaneId,
-    x: i32,
-    y: i32,
+    x: f32,
+    y: f32,
     state: SignalState,
 ) {
-    let red_on = state == SignalState::Red;
-    let green_on = state == SignalState::Green;
-    let spacing = 12;
-    let lamp_r = 6;
-
-    set_color(
-        canvas,
-        theme::HOUSING.0,
-        theme::HOUSING.1,
-        theme::HOUSING.2,
-    );
-    match lane {
-        LaneId::NorthSb | LaneId::SouthNb => {
-            fill_rounded_rect(
-                canvas,
-                x - 8,
-                y - spacing - lamp_r - 4,
-                16,
-                (spacing * 2 + lamp_r * 2 + 8) as u32,
-                4,
-            );
-        }
-        LaneId::WestEb | LaneId::EastWb => {
-            fill_rounded_rect(
-                canvas,
-                x - spacing - lamp_r - 4,
-                y - 8,
-                (spacing * 2 + lamp_r * 2 + 8) as u32,
-                16,
-                4,
-            );
-        }
-        _ => return,
-    }
-
-    set_color(
-        canvas,
-        theme::HOUSING_EDGE.0,
-        theme::HOUSING_EDGE.1,
-        theme::HOUSING_EDGE.2,
-    );
-    match lane {
-        LaneId::NorthSb | LaneId::SouthNb => {
-            let _ = canvas.draw_rect(Rect::new(
-                x - 8,
-                y - spacing - lamp_r - 4,
-                16,
-                (spacing * 2 + lamp_r * 2 + 8) as u32,
-            ));
-        }
-        LaneId::WestEb | LaneId::EastWb => {
-            let _ = canvas.draw_rect(Rect::new(
-                x - spacing - lamp_r - 4,
-                y - 8,
-                (spacing * 2 + lamp_r * 2 + 8) as u32,
-                16,
-            ));
-        }
-        _ => return,
-    }
-
-    let (rx, ry, gx, gy) = match lane {
-        LaneId::NorthSb => (x, y - spacing, x, y + spacing),
-        LaneId::SouthNb => (x, y + spacing, x, y - spacing),
-        LaneId::WestEb => (x - spacing, y, x + spacing, y),
-        LaneId::EastWb => (x + spacing, y, x - spacing, y),
-        _ => return,
+    let texture = if state == SignalState::Green {
+        &mut sprites.signal_green
+    } else {
+        &mut sprites.signal_red
     };
-
-    let ((gr, gg, gb), (cr, cg, cb)) = lamp_colors(red_on, false);
-    set_color(canvas, gr, gg, gb);
-    fill_circle(canvas, rx, ry, lamp_r + 2);
-    set_color(canvas, cr, cg, cb);
-    fill_circle(canvas, rx, ry, lamp_r);
-
-    let ((gr, gg, gb), (cr, cg, cb)) = lamp_colors(green_on, true);
-    set_color(canvas, gr, gg, gb);
-    fill_circle(canvas, gx, gy, lamp_r + 2);
-    set_color(canvas, cr, cg, cb);
-    fill_circle(canvas, gx, gy, lamp_r);
+    let w = (sprites.signal_w as f32 * config::SIGNAL_DRAW_SCALE).round() as u32;
+    let h = (sprites.signal_h as f32 * config::SIGNAL_DRAW_SCALE).round() as u32;
+    let _ = blit_sprite_centered(
+        canvas,
+        texture,
+        w,
+        h,
+        x,
+        y,
+        signal_sprite_rotation(lane),
+        None,
+    );
 }
 
-fn draw_traffic_lights(canvas: &mut Canvas<Window>, sim: &Simulation) {
+fn draw_traffic_lights(canvas: &mut Canvas<Window>, sprites: &mut SpriteAtlas, sim: &Simulation) {
     for lane_id in LaneId::ALL {
         let lane = sim.world.lane(lane_id);
         if !lane.inbound {
             continue;
         }
         let state = sim.lane_signal(lane_id);
-        draw_traffic_light(
+        draw_traffic_light_sprite(
             canvas,
+            sprites,
             lane_id,
-            lane.light_pos.x as i32,
-            lane.light_pos.y as i32,
+            lane.light_pos.x,
+            lane.light_pos.y,
             state,
         );
     }
@@ -676,15 +616,20 @@ fn draw_label_pill(canvas: &mut Canvas<Window>, word: &str, x: i32, y: i32, scal
     let pad_y = 4;
     let w = label_width(word, scale) + pad_x * 2;
     let h = label_height(scale) + pad_y * 2;
-    set_color(
-        canvas,
-        theme::LABEL_BG.0,
-        theme::LABEL_BG.1,
-        theme::LABEL_BG.2,
-    );
-    fill_rounded_rect(canvas, x, y, w as u32, h as u32, 6);
+    draw_retro_box(canvas, x, y, w as u32, h as u32, theme::LABEL_BOX);
     set_color(canvas, theme::LABEL.0, theme::LABEL.1, theme::LABEL.2);
     draw_label_word(canvas, word, x + pad_x, y + pad_y, scale);
+}
+
+fn draw_chip(canvas: &mut Canvas<Window>, label: &str, x: i32, y: i32, scale: i32) -> i32 {
+    let pad_x = 8;
+    let pad_y = 5;
+    let w = label_width(label, scale) + pad_x * 2;
+    let h = label_height(scale) + pad_y * 2;
+    draw_retro_box(canvas, x, y, w as u32, h as u32, theme::HUD_BOX);
+    set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
+    draw_label_word(canvas, label, x + pad_x, y + pad_y, scale);
+    w
 }
 
 fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
@@ -716,66 +661,142 @@ fn draw_cardinal_labels(canvas: &mut Canvas<Window>) {
     );
 }
 
-fn draw_vehicle(canvas: &mut Canvas<Window>, sim: &Simulation, index: usize) {
+/// SDL rotation: 0° = up; vehicle heading uses atan2 (0° = east).
+fn vehicle_sprite_rotation(heading: f32) -> f64 {
+    (heading + 90.0) as f64
+}
+
+fn blit_sprite_centered(
+    canvas: &mut Canvas<Window>,
+    texture: &mut Texture,
+    dst_w: u32,
+    dst_h: u32,
+    cx: f32,
+    cy: f32,
+    angle_deg: f64,
+    tint: Option<(u8, u8, u8)>,
+) -> Result<(), String> {
+    if let Some((r, g, b)) = tint {
+        texture.set_color_mod(r, g, b);
+    } else {
+        texture.set_color_mod(255, 255, 255);
+    }
+    texture.set_alpha_mod(255);
+
+    let dst = Rect::from_center(
+        Point::new(cx as i32, cy as i32),
+        dst_w,
+        dst_h,
+    );
+    let center = Point::new(dst_w as i32 / 2, dst_h as i32 / 2);
+    canvas
+        .copy_ex(texture, None, dst, angle_deg, center, false, false)
+        .map_err(|e| e.to_string())
+}
+
+fn draw_vehicle_sprite(
+    canvas: &mut Canvas<Window>,
+    sprites: &mut SpriteAtlas,
+    sim: &Simulation,
+    index: usize,
+) {
     let v = &sim.vehicles[index];
     let pos = v.position();
-    let scale = config::VEHICLE_DRAW_SCALE;
-    let (width, height) = v.draw_extents();
-    let width = width * scale;
-    let height = height * scale;
-    let hw = (width * 0.5) as i32;
-    let hh = (height * 0.5) as i32;
-    let x = pos.x as i32 - hw;
-    let y = pos.y as i32 - hh;
-    let w = (hw * 2).max(4) as u32;
-    let h = (hh * 2).max(4) as u32;
+    let (width, height) = v.draw_sprite_size();
+    let (min_w, min_h) = match v.kind {
+        VehicleKind::Car => (18.0, 24.0),
+        VehicleKind::Motorcycle => (12.0, 18.0),
+    };
+    let w = width.max(min_w) as u32;
+    let h = height.max(min_h) as u32;
+    let c = v.color();
+    let angle = vehicle_sprite_rotation(v.heading());
+    let texture = match v.kind {
+        VehicleKind::Car => &mut sprites.car,
+        VehicleKind::Motorcycle => &mut sprites.motorcycle,
+    };
 
-    set_color(
+    let _ = blit_sprite_centered(
         canvas,
-        theme::VEHICLE_SHADOW.0,
-        theme::VEHICLE_SHADOW.1,
-        theme::VEHICLE_SHADOW.2,
+        texture,
+        w,
+        h,
+        pos.x + 2.0,
+        pos.y + 2.0,
+        angle,
+        Some((48, 48, 56)),
     );
-    fill_rounded_rect(canvas, x + 2, y + 3, w, h, 5);
-
-    let color = v.color();
-    set_color(canvas, color.r, color.g, color.b);
-    fill_rounded_rect(canvas, x, y, w, h, 5);
-
-    set_color(
+    let _ = blit_sprite_centered(
         canvas,
-        theme::VEHICLE_OUTLINE.0,
-        theme::VEHICLE_OUTLINE.1,
-        theme::VEHICLE_OUTLINE.2,
+        texture,
+        w,
+        h,
+        pos.x,
+        pos.y,
+        angle,
+        Some((c.r, c.g, c.b)),
     );
-    let _ = canvas.draw_rect(Rect::new(x, y, w, h));
-
-    let heading = v.heading();
-    set_color(
-        canvas,
-        (color.r / 2 + 40).min(255),
-        (color.g / 2 + 40).min(255),
-        (color.b / 2 + 40).min(255),
-    );
-    if (45.0..135.0).contains(&heading) || (225.0..315.0).contains(&heading) {
-        fill_rect(canvas, x + hw - 4, y + 3, 8, (h / 3).max(4));
-    } else {
-        fill_rect(canvas, x + 3, y + hh - 4, (w / 3).max(4), 8);
-    }
 }
 
-fn draw_vehicles(canvas: &mut Canvas<Window>, sim: &Simulation) {
+fn draw_vehicles(canvas: &mut Canvas<Window>, sprites: &mut SpriteAtlas, sim: &Simulation) {
     for i in 0..sim.vehicles.len() {
-        draw_vehicle(canvas, sim, i);
+        draw_vehicle_sprite(canvas, sprites, sim, i);
     }
 }
 
-fn active_phase_label(sim: &Simulation) -> &'static str {
-    if sim.is_green(LaneId::NorthSb) || sim.is_green(LaneId::SouthNb) {
-        "N-S GREEN"
-    } else {
-        "E-W GREEN"
+fn active_signal_label(sim: &Simulation) -> (&'static str, bool) {
+    const LANES: [(LaneId, &str); 4] = [
+        (LaneId::NorthSb, "NORTH IN"),
+        (LaneId::SouthNb, "SOUTH IN"),
+        (LaneId::WestEb, "WEST IN"),
+        (LaneId::EastWb, "EAST IN"),
+    ];
+    for (lane, label) in LANES {
+        if sim.is_green(lane) {
+            return (label, true);
+        }
     }
+    ("ALL RED", false)
+}
+
+fn draw_signal_status(canvas: &mut Canvas<Window>, x: i32, y: i32, label: &str, green: bool) -> i32 {
+    let scale = 2;
+    let pad_x = 12;
+    let pad_y = 8;
+    let text_w = label_width(label, scale);
+    let w = text_w + pad_x * 2 + 18;
+    let h = label_height(scale) + pad_y * 2;
+
+    draw_retro_box(canvas, x, y, w as u32, h as u32, theme::HUD_BOX);
+
+    let dot_r = 4;
+    let dot_x = x + pad_x;
+    let dot_y = y + h / 2;
+    let lamp = if green {
+        theme::LAMP_GREEN
+    } else {
+        theme::LAMP_RED
+    };
+    set_color(canvas, lamp.0, lamp.1, lamp.2);
+    fill_circle(canvas, dot_x, dot_y, dot_r);
+
+    set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
+    draw_label_word(canvas, label, x + pad_x + 16, y + pad_y, scale);
+    w
+}
+
+fn draw_vehicle_badge(canvas: &mut Canvas<Window>, x: i32, y: i32, count: usize) -> i32 {
+    let scale = 2;
+    let num = count.to_string();
+    let label = format!("CARS {num}");
+    let pad_x = 12;
+    let pad_y = 8;
+    let w = label_width(&label, scale) + pad_x * 2;
+    let h = label_height(scale) + pad_y * 2;
+    draw_retro_box(canvas, x, y, w as u32, h as u32, theme::HUD_BOX);
+    set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
+    draw_label_word(canvas, &label, x + pad_x, y + pad_y, scale);
+    w
 }
 
 fn draw_hud(canvas: &mut Canvas<Window>, sim: &Simulation) {
@@ -790,58 +811,68 @@ fn draw_hud(canvas: &mut Canvas<Window>, sim: &Simulation) {
         config::HUD_HEIGHT,
     );
 
-    set_color(
-        canvas,
-        theme::HUD_BORDER.0,
-        theme::HUD_BORDER.1,
-        theme::HUD_BORDER.2,
-    );
-    fill_rect(canvas, 0, hud_y, config::WINDOW_WIDTH, 3);
+    set_color(canvas, theme::HUD_BAR.0, theme::HUD_BAR.1, theme::HUD_BAR.2);
+    fill_rect(canvas, 0, hud_y, config::WINDOW_WIDTH, 4);
 
     let scale = 2;
-    let row1 = hud_y + 14;
-    let row2 = hud_y + 38;
-    let row3 = hud_y + 62;
+    let pad = 16;
+    let row_top = hud_y + 14;
+    let row_bottom = hud_y + 56;
 
+    draw_retro_box(canvas, pad, row_top - 4, 248, 40, theme::HUD_BOX);
     set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
-    draw_label_word(canvas, "ROAD INTERSECTION", 20, row1, scale);
+    draw_label_word(canvas, "TRAFFIC SIM", pad + 12, row_top + 4, scale);
+    set_color(canvas, theme::HUD_MUTED.0, theme::HUD_MUTED.1, theme::HUD_MUTED.2);
+    draw_label_word(canvas, "1990S MODE", pad + 12, row_top + 20, 1);
+
+    let mut chip_x = pad + 268;
+    for label in ["ARROWS", "R RANDOM", "ESC"] {
+        chip_x += draw_chip(canvas, label, chip_x, row_top, scale) + 8;
+    }
+
+    let (phase_label, phase_green) = active_signal_label(sim);
+    let status_x = chip_x + 8;
+    let status_w = draw_signal_status(canvas, status_x, row_top, phase_label, phase_green);
+    let badge_x = status_x + status_w + 8;
+    let _badge_w = draw_vehicle_badge(canvas, badge_x, row_top, sim.vehicles.len());
 
     set_color(canvas, theme::HUD_MUTED.0, theme::HUD_MUTED.1, theme::HUD_MUTED.2);
     draw_label_word(
         canvas,
-        "ARROWS SPAWN  R RANDOM  ESC QUIT",
-        20,
-        row2,
-        scale,
+        "ARROWS=SPAWN  R=RANDOM  ESC=QUIT",
+        pad + 12,
+        row_bottom,
+        1,
     );
 
-    let phase = active_phase_label(sim);
-    let count = sim.vehicles.len();
-    let mut stats = String::with_capacity(32);
-    stats.push_str("VEHICLES ");
-    stats.push_str(&count.to_string());
-    stats.push_str("   ");
-    stats.push_str(phase);
-
-    set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
-    draw_label_word(canvas, &stats, 20, row3, scale);
-
-    let legend_x = config::WINDOW_WIDTH as i32 - 320;
-    draw_route_legend(canvas, legend_x, row2);
+    let legend_w = 310u32;
+    let legend_x = config::WINDOW_WIDTH as i32 - legend_w as i32 - pad;
+    draw_retro_box(canvas, legend_x, row_bottom - 6, legend_w, 32, theme::HUD_BOX);
+    draw_route_legend(canvas, legend_x + 12, row_bottom);
 }
 
 fn draw_route_legend(canvas: &mut Canvas<Window>, x: i32, y: i32) {
-    let scale = 2;
-    let swatch = 12;
-    let gap = 100;
-    let labels = [("LEFT", RouteType::Left), ("RIGHT", RouteType::Right), ("STRAIGHT", RouteType::Straight)];
+    let scale = 1;
+    let swatch = 10;
+    let gap = 98;
+    let labels = [
+        ("LEFT", RouteType::Left),
+        ("RIGHT", RouteType::Right),
+        ("STRAIGHT", RouteType::Straight),
+    ];
+
+    set_color(canvas, theme::HUD_MUTED.0, theme::HUD_MUTED.1, theme::HUD_MUTED.2);
+    draw_label_word(canvas, "ROUTES", x, y - 2, scale);
 
     for (i, (name, route)) in labels.iter().enumerate() {
         let ox = x + i as i32 * gap;
+        let oy = y + 10;
         let c = route_color(*route);
         set_color(canvas, c.r, c.g, c.b);
-        fill_rounded_rect(canvas, ox, y + 2, swatch as u32, swatch as u32, 3);
-        set_color(canvas, theme::HUD_MUTED.0, theme::HUD_MUTED.1, theme::HUD_MUTED.2);
-        draw_label_word(canvas, name, ox + swatch + 6, y, scale);
+        fill_rect(canvas, ox, oy, swatch as u32, swatch as u32);
+        set_color(canvas, theme::BLACK.0, theme::BLACK.1, theme::BLACK.2);
+        let _ = canvas.draw_rect(Rect::new(ox, oy, swatch as u32, swatch as u32));
+        set_color(canvas, theme::HUD_TEXT.0, theme::HUD_TEXT.1, theme::HUD_TEXT.2);
+        draw_label_word(canvas, name, ox + swatch + 6, oy - 1, scale);
     }
 }

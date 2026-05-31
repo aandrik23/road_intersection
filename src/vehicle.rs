@@ -1,5 +1,5 @@
 use crate::config;
-use crate::types::{route_color, ColorRgb, LaneId, RouteType, SignalState, Vec2};
+use crate::types::{route_color, ColorRgb, LaneId, RouteType, SignalState, VehicleKind, Vec2};
 use crate::world::World;
 
 /// A car on an inbound lane with a fixed route from spawn to exit.
@@ -8,6 +8,7 @@ pub struct Vehicle {
     pub id: u32,
     pub lane: LaneId,
     pub route: RouteType,
+    pub kind: VehicleKind,
     route_progress: f32,
     lane_length: f32,
     path_points: Vec<Vec2>,
@@ -16,7 +17,7 @@ pub struct Vehicle {
 }
 
 impl Vehicle {
-    pub fn new(id: u32, lane: LaneId, route: RouteType, world: &World) -> Self {
+    pub fn new(id: u32, lane: LaneId, route: RouteType, kind: VehicleKind, world: &World) -> Self {
         let lane_info = world.lane(lane);
         let route_path = world.route(lane, route);
         let (path_points, path_length) = build_full_path(lane_info.spawn, &route_path.waypoints);
@@ -25,6 +26,7 @@ impl Vehicle {
             id,
             lane,
             route,
+            kind,
             route_progress: 0.0,
             lane_length: lane_info.lane_length,
             path_points,
@@ -53,14 +55,26 @@ impl Vehicle {
         sample_path(&self.path_points, self.route_progress).1
     }
 
-    pub fn draw_extents(&self) -> (f32, f32) {
-        let h = self.heading().abs();
-        let narrow = config::LANE_WIDTH * 0.48;
-        if (45.0..135.0).contains(&h) || (225.0..315.0).contains(&h) {
-            (config::VEHICLE_LENGTH, narrow)
-        } else {
-            (narrow, config::VEHICLE_LENGTH)
+    /// Vehicle-local sprite size: (lateral width, forward length). Heading is applied via rotation.
+    pub fn draw_sprite_size(&self) -> (f32, f32) {
+        let length = match self.kind {
+            VehicleKind::Car => config::VEHICLE_LENGTH,
+            VehicleKind::Motorcycle => config::MOTORCYCLE_LENGTH,
+        };
+        let lateral = match self.kind {
+            VehicleKind::Car => config::LANE_WIDTH * 0.48 * config::CAR_DRAW_WIDTH_SCALE,
+            VehicleKind::Motorcycle => config::LANE_WIDTH * 0.30,
+        };
+
+        let mut w = lateral * config::VEHICLE_DRAW_SCALE;
+        let mut h = length * config::VEHICLE_DRAW_SCALE;
+
+        if self.kind == VehicleKind::Motorcycle {
+            w *= config::MOTORCYCLE_DRAW_SCALE;
+            h *= config::MOTORCYCLE_DRAW_SCALE;
         }
+
+        (w, h)
     }
 
     pub fn compute_advance(
@@ -409,7 +423,7 @@ mod tests {
     #[test]
     fn path_starts_at_spawn() {
         let world = World::new();
-        let v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, VehicleKind::Car, &world);
         let spawn = world.lane(LaneId::SouthNb).spawn;
         let pos = v.position();
         assert!((pos.x - spawn.x).abs() < 0.01);
@@ -433,7 +447,7 @@ mod tests {
     #[test]
     fn red_light_holds_before_stop_line() {
         let world = World::new();
-        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, VehicleKind::Car, &world);
         let lane_length = world.lane(LaneId::SouthNb).lane_length;
         v.apply_advance(lane_length - 1.0);
         let vehicles = [v.clone()];
@@ -445,7 +459,7 @@ mod tests {
     #[test]
     fn red_light_holds_before_crossing_markings() {
         let world = World::new();
-        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, VehicleKind::Car, &world);
         let lane_length = world.lane(LaneId::SouthNb).lane_length;
         let hold = red_light_hold_progress(lane_length);
         v.apply_advance(hold);
@@ -458,7 +472,7 @@ mod tests {
     #[test]
     fn red_light_does_not_drive_up_to_stop_line() {
         let world = World::new();
-        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, VehicleKind::Car, &world);
         let lane_length = world.lane(LaneId::SouthNb).lane_length;
         let hold = red_light_hold_progress(lane_length);
         v.apply_advance(hold - 5.0);
@@ -471,7 +485,7 @@ mod tests {
     #[test]
     fn green_light_passes_stop_line() {
         let world = World::new();
-        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, VehicleKind::Car, &world);
         let lane_length = world.lane(LaneId::SouthNb).lane_length;
         v.apply_advance(lane_length);
         let vehicles = [v.clone()];
@@ -491,8 +505,8 @@ mod tests {
     #[test]
     fn intersection_blocks_advance_when_too_close() {
         let world = World::new();
-        let mut a = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, &world);
-        let mut b = Vehicle::new(2, LaneId::WestEb, RouteType::Straight, &world);
+        let mut a = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, VehicleKind::Car, &world);
+        let mut b = Vehicle::new(2, LaneId::WestEb, RouteType::Straight, VehicleKind::Car, &world);
         let lane_a = a.lane_length;
         let lane_b = b.lane_length;
         a.apply_advance(lane_a + 40.0);
@@ -509,8 +523,8 @@ mod tests {
     #[test]
     fn follower_stops_behind_leader() {
         let world = World::new();
-        let mut leader = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, &world);
-        let mut follower = Vehicle::new(2, LaneId::NorthSb, RouteType::Straight, &world);
+        let mut leader = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, VehicleKind::Car, &world);
+        let mut follower = Vehicle::new(2, LaneId::NorthSb, RouteType::Straight, VehicleKind::Car, &world);
         let gap = min_follow_gap();
         leader.apply_advance(gap + 20.0);
         let vehicles = vec![leader.clone(), follower.clone()];

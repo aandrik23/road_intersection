@@ -1,6 +1,7 @@
 pub mod config;
 pub mod input;
 pub mod render;
+pub mod sprites;
 pub mod simulation;
 pub mod traffic_lights;
 pub mod types;

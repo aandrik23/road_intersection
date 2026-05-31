@@ -1,4 +1,4 @@
-use crate::types::{LaneId, RouteType, SignalState};
+use crate::types::{LaneId, RouteType, SignalState, VehicleKind};
 use crate::vehicle::{lane_spawn_blocked, queue_count_on_lane, Vehicle};
 use crate::world::World;
 use crate::config;
@@ -33,7 +33,7 @@ impl Simulation {
         self.lane_signal(lane) == SignalState::Green
     }
 
-    pub fn spawn_vehicle(&mut self, lane: LaneId, route: RouteType) -> bool {
+    pub fn spawn_vehicle(&mut self, lane: LaneId, route: RouteType, kind: VehicleKind) -> bool {
         if !self.world.lane(lane).inbound {
             return false;
         }
@@ -48,7 +48,7 @@ impl Simulation {
         let id = self.next_vehicle_id;
         self.next_vehicle_id += 1;
         self.vehicles
-            .push(Vehicle::new(id, lane, route, &self.world));
+            .push(Vehicle::new(id, lane, route, kind, &self.world));
         true
     }
 

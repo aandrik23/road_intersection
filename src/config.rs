@@ -1,20 +1,27 @@
 /// Shared simulation constants (pixels).
 pub const WINDOW_WIDTH: u32 = 1152;
 pub const WINDOW_HEIGHT: u32 = 864;
-pub const HUD_HEIGHT: u32 = 88;
+pub const HUD_HEIGHT: u32 = 104;
 
 pub const CENTER_X: f32 = WINDOW_WIDTH as f32 * 0.5;
 pub const CENTER_Y: f32 = (WINDOW_HEIGHT - HUD_HEIGHT) as f32 * 0.5 + 8.0;
 
 pub const VEHICLE_LENGTH: f32 = 22.0;
+pub const MOTORCYCLE_LENGTH: f32 = 14.0;
 pub const SAFETY_GAP: f32 = 10.0;
 /// Multiplier on follow gap — minimum space before another car may spawn on the lane.
 pub const SPAWN_QUEUE_FACTOR: f32 = 1.75;
 /// Small buffer when crossing perpendicular traffic in the box.
 pub const INTERSECTION_EXTRA_GAP: f32 = 4.0;
 pub const VEHICLE_SPEED: f32 = 90.0;
-/// Visual scale for car sprites (collision uses full `VEHICLE_LENGTH`).
-pub const VEHICLE_DRAW_SCALE: f32 = 0.82;
+/// Visual scale for vehicle sprites (collision uses full `VEHICLE_LENGTH`).
+pub const VEHICLE_DRAW_SCALE: f32 = 1.22;
+/// Extra width for car sprites only (narrow axis).
+pub const CAR_DRAW_WIDTH_SCALE: f32 = 1.16;
+/// Extra scale for motorcycle sprites (length and width).
+pub const MOTORCYCLE_DRAW_SCALE: f32 = 1.2;
+/// On-screen scale for traffic-light SVGs (texture is rasterized larger for sharpness).
+pub const SIGNAL_DRAW_SCALE: f32 = 0.68;
 
 pub const INTERSECTION_HALF: f32 = 102.0;
 pub const LANE_WIDTH: f32 = 46.0;

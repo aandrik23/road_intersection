@@ -5,4 +5,6 @@ edition = "2021"
 description = "Traffic intersection simulation"
 
 [dependencies]
+resvg = "0.47.0"
 sdl2 = "0.38"
+tiny-skia = "0.12"
