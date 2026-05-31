@@ -186,14 +186,14 @@ fn intersection_commitment(v: &Vehicle) -> f32 {
     (v.route_progress - v.lane_length).max(0.0)
 }
 
-/// North–south vs east–west entries can cross; same-phase lanes do not.
+/// Any two different inbound approaches can cross paths in the box (turns included).
 fn lanes_conflict(a: LaneId, b: LaneId) -> bool {
     use LaneId::{EastWb, NorthSb, SouthNb, WestEb};
-    let ns = matches!(a, NorthSb | SouthNb);
-    let ew = matches!(a, WestEb | EastWb);
-    let ns_b = matches!(b, NorthSb | SouthNb);
-    let ew_b = matches!(b, WestEb | EastWb);
-    (ns && ew_b) || (ew && ns_b)
+    if a == b {
+        return false;
+    }
+    let inbound = |l: LaneId| matches!(l, NorthSb | SouthNb | WestEb | EastWb);
+    inbound(a) && inbound(b)
 }
 
 /// True if `me` must yield to `other` at `pos` (prevents mutual deadlock).
@@ -362,6 +362,11 @@ fn cap_for_lane_proximity(
     advance
 }
 
+/// Path progress limit on red — front bumper stays before the crosswalk band.
+fn red_light_hold_progress(lane_length: f32) -> f32 {
+    (lane_length - config::red_light_hold_back()).max(0.0)
+}
+
 fn cap_for_red_light(me: &Vehicle, signal: SignalState, advance: f32) -> f32 {
     if signal == SignalState::Green {
         return advance;
@@ -370,8 +375,9 @@ fn cap_for_red_light(me: &Vehicle, signal: SignalState, advance: f32) -> f32 {
     if me.route_progress > me.lane_length {
         return advance;
     }
-    // Red: hold at or before the stop line.
-    let allowed = me.lane_length - me.route_progress;
+    // Red: hold before the crossing/stop line markings.
+    let hold = red_light_hold_progress(me.lane_length);
+    let allowed = hold - me.route_progress;
     advance.min(allowed.max(0.0))
 }
 
@@ -437,14 +443,29 @@ mod tests {
     }
 
     #[test]
-    fn red_light_holds_at_stop_line() {
+    fn red_light_holds_before_crossing_markings() {
         let world = World::new();
         let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
         let lane_length = world.lane(LaneId::SouthNb).lane_length;
-        v.apply_advance(lane_length);
+        let hold = red_light_hold_progress(lane_length);
+        v.apply_advance(hold);
         let vehicles = [v.clone()];
         let advance = v.compute_advance(1.0, SignalState::Red, &vehicles, 0);
         assert_eq!(advance, 0.0);
+        assert!(v.route_progress() < lane_length - 1.0);
+    }
+
+    #[test]
+    fn red_light_does_not_drive_up_to_stop_line() {
+        let world = World::new();
+        let mut v = Vehicle::new(1, LaneId::SouthNb, RouteType::Straight, &world);
+        let lane_length = world.lane(LaneId::SouthNb).lane_length;
+        let hold = red_light_hold_progress(lane_length);
+        v.apply_advance(hold - 5.0);
+        let vehicles = [v.clone()];
+        let advance = v.compute_advance(1.0, SignalState::Red, &vehicles, 0);
+        v.apply_advance(advance);
+        assert!(v.route_progress() <= hold + 0.01);
     }
 
     #[test]

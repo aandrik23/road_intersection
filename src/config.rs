@@ -27,6 +27,16 @@ pub const ARM_LENGTH: f32 = 290.0;
 /// How far traffic lights sit beside the lane (not on the vehicle path).
 pub const TRAFFIC_LIGHT_SIDE_OFFSET: f32 = 28.0;
 pub const TRAFFIC_LIGHT_STOP_OFFSET: f32 = 14.0;
+/// Crosswalk stripe band depth (must match `draw_crosswalks` in render.rs).
+pub const CROSSWALK_DEPTH: f32 = 10.0;
+/// Extra space between crosswalk and the front bumper when waiting on red.
+pub const RED_LIGHT_STOP_MARGIN: f32 = 10.0;
+
+/// Path-progress hold point on red: keeps the drawn front bumper clear of crosswalks.
+pub fn red_light_hold_back() -> f32 {
+    let front_bumper = VEHICLE_LENGTH * VEHICLE_DRAW_SCALE * 0.5;
+    CROSSWALK_DEPTH + front_bumper + RED_LIGHT_STOP_MARGIN
+}
 
 /// Intersection box edges (pixels).
 pub const IX0: f32 = CENTER_X - INTERSECTION_HALF;

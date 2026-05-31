@@ -244,32 +244,33 @@ fn draw_crosswalks(canvas: &mut Canvas<Window>) {
 
     for i in 0..5 {
         let offset = i * (stripe + gap);
+        let cw = config::CROSSWALK_DEPTH as i32;
         fill_rect(
             canvas,
             enter_sb - span / 2 + offset,
-            iy0 - 10,
+            iy0 - cw,
             stripe as u32,
-            10,
+            cw as u32,
         );
         fill_rect(
             canvas,
             enter_nb - span / 2 + offset,
             iy1,
             stripe as u32,
-            10,
+            cw as u32,
         );
         fill_rect(
             canvas,
-            ix0 - 10,
+            ix0 - cw,
             enter_eb - span / 2 + offset,
-            10,
+            cw as u32,
             stripe as u32,
         );
         fill_rect(
             canvas,
             ix1,
             enter_wb - span / 2 + offset,
-            10,
+            cw as u32,
             stripe as u32,
         );
     }

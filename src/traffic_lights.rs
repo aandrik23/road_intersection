@@ -6,10 +6,41 @@ const MIN_GREEN_SECONDS: f32 = 3.0;
 const NORMAL_MAX_GREEN_SECONDS: f32 = 8.0;
 const EXTENDED_MAX_GREEN_SECONDS: f32 = 14.0;
 
+/// One inbound approach green at a time — any phase order is allowed by the spec;
+/// sequential greens avoid path crossings inside the box (e.g. opposing left turns).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrafficPhase {
-    NorthSouth,
-    EastWest,
+    NorthSb,
+    SouthNb,
+    WestEb,
+    EastWb,
+}
+
+impl TrafficPhase {
+    const ALL: [TrafficPhase; 4] = [
+        TrafficPhase::NorthSb,
+        TrafficPhase::SouthNb,
+        TrafficPhase::WestEb,
+        TrafficPhase::EastWb,
+    ];
+
+    fn lane(self) -> LaneId {
+        match self {
+            TrafficPhase::NorthSb => LaneId::NorthSb,
+            TrafficPhase::SouthNb => LaneId::SouthNb,
+            TrafficPhase::WestEb => LaneId::WestEb,
+            TrafficPhase::EastWb => LaneId::EastWb,
+        }
+    }
+
+    fn next(self) -> TrafficPhase {
+        match self {
+            TrafficPhase::NorthSb => TrafficPhase::SouthNb,
+            TrafficPhase::SouthNb => TrafficPhase::WestEb,
+            TrafficPhase::WestEb => TrafficPhase::EastWb,
+            TrafficPhase::EastWb => TrafficPhase::NorthSb,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -21,7 +52,7 @@ pub struct TrafficLightController {
 impl TrafficLightController {
     pub fn new() -> Self {
         Self {
-            phase: TrafficPhase::NorthSouth,
+            phase: TrafficPhase::NorthSb,
             elapsed_in_phase: 0.0,
         }
     }
@@ -41,10 +72,15 @@ impl TrafficLightController {
             return false;
         }
 
-        let current_is_full = self.phase_has_full_lane(sim, self.phase);
-        let opposite_is_full = self.phase_has_full_lane(sim, self.opposite_phase());
+        let current_lane = self.phase.lane();
+        let current_is_full = lane_is_at_capacity(sim, current_lane);
+        let other_waiting_full = TrafficPhase::ALL
+            .iter()
+            .filter(|p| **p != self.phase)
+            .any(|p| lane_is_at_capacity(sim, p.lane()));
 
-        if opposite_is_full {
+        // Yield the green to a congested approach that is still waiting.
+        if other_waiting_full && !current_is_full {
             return true;
         }
 
@@ -60,47 +96,23 @@ impl TrafficLightController {
     }
 
     fn switch_phase(&mut self) {
-        self.phase = self.opposite_phase();
+        self.phase = self.phase.next();
         self.elapsed_in_phase = 0.0;
-    }
-
-    fn opposite_phase(&self) -> TrafficPhase {
-        match self.phase {
-            TrafficPhase::NorthSouth => TrafficPhase::EastWest,
-            TrafficPhase::EastWest => TrafficPhase::NorthSouth,
-        }
     }
 
     fn apply_phase_to_simulation(&self, sim: &mut Simulation) {
         for lane in LaneId::ALL {
             sim.set_lane_signal(lane, SignalState::Red);
         }
-
-        for lane in Self::lanes_for_phase(self.phase) {
-            sim.set_lane_signal(lane, SignalState::Green);
-        }
+        sim.set_lane_signal(self.phase.lane(), SignalState::Green);
     }
+}
 
-    fn lanes_for_phase(phase: TrafficPhase) -> [LaneId; 2] {
-        match phase {
-            TrafficPhase::NorthSouth => [LaneId::NorthSb, LaneId::SouthNb],
-            TrafficPhase::EastWest => [LaneId::EastWb, LaneId::WestEb],
-        }
-    }
-
-    fn phase_has_full_lane(&self, sim: &Simulation, phase: TrafficPhase) -> bool {
-        for lane in Self::lanes_for_phase(phase) {
-            let lane_info = sim.world.lane(lane);
-            let capacity = lane_capacity(lane_info.lane_length);
-            let queue_count = get_lane_queue_count(sim, lane);
-
-            if capacity > 0 && queue_count >= capacity {
-                return true;
-            }
-        }
-
-        false
-    }
+fn lane_is_at_capacity(sim: &Simulation, lane: LaneId) -> bool {
+    let lane_info = sim.world.lane(lane);
+    let capacity = lane_capacity(lane_info.lane_length);
+    let queue_count = get_lane_queue_count(sim, lane);
+    capacity > 0 && queue_count >= capacity
 }
 
 impl Default for TrafficLightController {
@@ -111,9 +123,8 @@ impl Default for TrafficLightController {
 
 pub fn print_traffic_light_summary() {
     println!("\n--- Person 2 traffic-light controller ---");
-    println!("Phases:");
-    println!("  NorthSouth: NorthSb + SouthNb green");
-    println!("  EastWest:   EastWb + WestEb green");
+    println!("Phases (one inbound lane green at a time):");
+    println!("  NorthSb → SouthNb → WestEb → EastWb → …");
     println!("Timing:");
     println!("  min green: {MIN_GREEN_SECONDS}s");
     println!("  normal max green: {NORMAL_MAX_GREEN_SECONDS}s");
