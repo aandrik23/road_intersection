@@ -1,15 +1,25 @@
 /// Shared simulation constants (pixels).
-pub const WINDOW_WIDTH: u32 = 960;
-pub const WINDOW_HEIGHT: u32 = 720;
+pub const WINDOW_WIDTH: u32 = 1024;
+pub const WINDOW_HEIGHT: u32 = 768;
+pub const HUD_HEIGHT: u32 = 88;
 
-pub const VEHICLE_LENGTH: f32 = 28.0;
-pub const SAFETY_GAP: f32 = 12.0;
+pub const CENTER_X: f32 = WINDOW_WIDTH as f32 * 0.5;
+pub const CENTER_Y: f32 = (WINDOW_HEIGHT - HUD_HEIGHT) as f32 * 0.5 + 8.0;
+
+pub const VEHICLE_LENGTH: f32 = 22.0;
+pub const SAFETY_GAP: f32 = 10.0;
 pub const VEHICLE_SPEED: f32 = 90.0;
+/// Visual scale for car sprites (collision uses full `VEHICLE_LENGTH`).
+pub const VEHICLE_DRAW_SCALE: f32 = 0.88;
 
-pub const CENTER_X: f32 = 480.0;
-pub const CENTER_Y: f32 = 360.0;
-pub const INTERSECTION_HALF: f32 = 56.0;
-pub const LANE_WIDTH: f32 = 34.0;
+pub const INTERSECTION_HALF: f32 = 84.0;
+pub const LANE_WIDTH: f32 = 40.0;
+/// How far into the box (0–1) before a left turn begins (drive straight first).
+pub const TURN_LEFT_DEPTH: f32 = 0.58;
+/// Shallower entry for right turns.
+pub const TURN_RIGHT_DEPTH: f32 = 0.36;
+/// When sweeping left, how much to pull toward the intersection center (0–1).
+pub const TURN_CROSS_BLEND: f32 = 0.75;
 pub const ARM_LENGTH: f32 = 260.0;
 
 /// How far traffic lights sit beside the lane (not on the vehicle path).

@@ -55,7 +55,7 @@ impl Vehicle {
 
     pub fn draw_extents(&self) -> (f32, f32) {
         let h = self.heading().abs();
-        let narrow = config::LANE_WIDTH * 0.55;
+        let narrow = config::LANE_WIDTH * 0.48;
         if (45.0..135.0).contains(&h) || (225.0..315.0).contains(&h) {
             (config::VEHICLE_LENGTH, narrow)
         } else {

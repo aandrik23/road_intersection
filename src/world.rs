@@ -287,10 +287,72 @@ fn set_route(world: &mut World, lane: LaneId, route: RouteType, path: RoutePath)
     world.routes[lane_index(lane)][route_index(route)] = path;
 }
 
+/// Helpers for natural turn paths: enter the box, then arc toward the exit.
+struct TurnGeometry {
+    cx: f32,
+    cy: f32,
+    ix0: f32,
+    ix1: f32,
+    iy0: f32,
+    iy1: f32,
+    span_x: f32,
+    span_y: f32,
+}
+
+impl TurnGeometry {
+    fn new() -> Self {
+        Self {
+            cx: config::CENTER_X,
+            cy: config::CENTER_Y,
+            ix0: config::IX0,
+            ix1: config::IX1,
+            iy0: config::IY0,
+            iy1: config::IY1,
+            span_x: config::IX1 - config::IX0,
+            span_y: config::IY1 - config::IY0,
+        }
+    }
+
+    fn y_from_north(&self, depth_frac: f32) -> f32 {
+        self.iy0 + self.span_y * depth_frac
+    }
+
+    fn y_from_south(&self, depth_frac: f32) -> f32 {
+        self.iy1 - self.span_y * depth_frac
+    }
+
+    fn x_from_west(&self, depth_frac: f32) -> f32 {
+        self.ix0 + self.span_x * depth_frac
+    }
+
+    fn x_from_east(&self, depth_frac: f32) -> f32 {
+        self.ix1 - self.span_x * depth_frac
+    }
+
+    fn blend_x(&self, x: f32) -> f32 {
+        x + (self.cx - x) * config::TURN_CROSS_BLEND
+    }
+
+    fn blend_y(&self, y: f32) -> f32 {
+        y + (self.cy - y) * config::TURN_CROSS_BLEND
+    }
+
+    /// Interior point on an arm (not on the box border).
+    fn inner_x_west(&self) -> f32 {
+        self.ix0 + self.span_x * config::TURN_RIGHT_DEPTH
+    }
+
+    fn inner_x_east(&self) -> f32 {
+        self.ix1 - self.span_x * config::TURN_RIGHT_DEPTH
+    }
+
+    fn inner_y_north(&self) -> f32 {
+        self.iy0 + self.span_y * config::TURN_RIGHT_DEPTH
+    }
+}
+
 fn build_paths_for_lane(world: &mut World, lane: LaneId) {
     let arm = config::ARM_LENGTH;
-    let cx = config::CENTER_X;
-    let cy = config::CENTER_Y;
     let ix0 = config::IX0;
     let ix1 = config::IX1;
     let iy0 = config::IY0;
@@ -303,7 +365,7 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
     let ex_sb = config::EXIT_SB_X;
     let ex_eb = config::EXIT_EB_Y;
     let ex_wb = config::EXIT_WB_Y;
-    let hub = Vec2 { x: cx, y: cy };
+    let g = TurnGeometry::new();
 
     let mut straight = PathBuilder::new(lane, RouteType::Straight);
     let mut left = PathBuilder::new(lane, RouteType::Left);
@@ -319,20 +381,40 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 x: ex_sb,
                 y: iy1 + arm,
             });
-            // Left → east: into the box, through center, then east.
+            // Left → east: enter south, sweep through center, exit east.
             left.push(stop);
-            left.push(Vec2 { x: er_sb, y: cy });
-            left.push(hub);
-            left.push(Vec2 { x: cx, y: er_eb });
+            left.push(Vec2 {
+                x: er_sb,
+                y: g.y_from_north(config::TURN_LEFT_DEPTH),
+            });
+            left.push(Vec2 {
+                x: g.blend_x(er_sb),
+                y: g.y_from_north(config::TURN_LEFT_DEPTH),
+            });
+            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: ix1, y: er_eb });
             left.push(Vec2 {
                 x: ix1 + arm,
                 y: ex_eb,
             });
-            // Right → west: through center, then west.
+            // Right → west: shallow entry, curve onto north arm.
             right.push(stop);
-            right.push(Vec2 { x: er_sb, y: cy });
-            right.push(hub);
-            right.push(Vec2 { x: ix0, y: ex_wb });
+            right.push(Vec2 {
+                x: er_sb,
+                y: g.y_from_north(config::TURN_RIGHT_DEPTH),
+            });
+            right.push(Vec2 {
+                x: er_sb,
+                y: ex_wb,
+            });
+            right.push(Vec2 {
+                x: g.inner_x_west(),
+                y: ex_wb,
+            });
+            right.push(Vec2 {
+                x: ix0,
+                y: ex_wb,
+            });
             right.push(Vec2 {
                 x: ix0 - arm,
                 y: ex_wb,
@@ -348,17 +430,37 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: iy0 - arm,
             });
             left.push(stop);
-            left.push(Vec2 { x: er_nb, y: cy });
-            left.push(hub);
+            left.push(Vec2 {
+                x: er_nb,
+                y: g.y_from_south(config::TURN_LEFT_DEPTH),
+            });
+            left.push(Vec2 {
+                x: g.blend_x(er_nb),
+                y: g.y_from_south(config::TURN_LEFT_DEPTH),
+            });
+            left.push(Vec2 { x: g.cx, y: g.cy });
             left.push(Vec2 { x: ix0, y: ex_wb });
             left.push(Vec2 {
                 x: ix0 - arm,
                 y: ex_wb,
             });
             right.push(stop);
-            right.push(Vec2 { x: er_nb, y: cy });
-            right.push(hub);
-            right.push(Vec2 { x: ix1, y: ex_eb });
+            right.push(Vec2 {
+                x: er_nb,
+                y: g.y_from_south(config::TURN_RIGHT_DEPTH),
+            });
+            right.push(Vec2 {
+                x: er_nb,
+                y: er_eb,
+            });
+            right.push(Vec2 {
+                x: g.inner_x_east(),
+                y: er_eb,
+            });
+            right.push(Vec2 {
+                x: ix1,
+                y: er_eb,
+            });
             right.push(Vec2 {
                 x: ix1 + arm,
                 y: ex_eb,
@@ -374,17 +476,33 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: ex_eb,
             });
             left.push(stop);
-            left.push(Vec2 { x: cx, y: er_eb });
-            left.push(hub);
-            left.push(Vec2 { x: er_nb, y: cy });
+            left.push(Vec2 {
+                x: g.x_from_west(config::TURN_LEFT_DEPTH),
+                y: er_eb,
+            });
+            left.push(Vec2 {
+                x: g.x_from_west(config::TURN_LEFT_DEPTH),
+                y: g.blend_y(er_eb),
+            });
+            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: er_nb, y: iy0 });
             left.push(Vec2 {
                 x: ex_nb,
                 y: iy0 - arm,
             });
             right.push(stop);
-            right.push(Vec2 { x: cx, y: er_eb });
-            right.push(hub);
-            right.push(Vec2 { x: er_sb, y: cy });
+            right.push(Vec2 {
+                x: g.x_from_west(config::TURN_RIGHT_DEPTH),
+                y: er_eb,
+            });
+            right.push(Vec2 {
+                x: er_sb,
+                y: er_eb,
+            });
+            right.push(Vec2 {
+                x: er_sb,
+                y: iy1,
+            });
             right.push(Vec2 {
                 x: ex_sb,
                 y: iy1 + arm,
@@ -400,17 +518,33 @@ fn build_paths_for_lane(world: &mut World, lane: LaneId) {
                 y: ex_wb,
             });
             left.push(stop);
-            left.push(Vec2 { x: cx, y: er_wb });
-            left.push(hub);
-            left.push(Vec2 { x: er_sb, y: cy });
+            left.push(Vec2 {
+                x: g.x_from_east(config::TURN_LEFT_DEPTH),
+                y: er_wb,
+            });
+            left.push(Vec2 {
+                x: g.x_from_east(config::TURN_LEFT_DEPTH),
+                y: g.blend_y(er_wb),
+            });
+            left.push(Vec2 { x: g.cx, y: g.cy });
+            left.push(Vec2 { x: er_sb, y: iy1 });
             left.push(Vec2 {
                 x: ex_sb,
                 y: iy1 + arm,
             });
             right.push(stop);
-            right.push(Vec2 { x: cx, y: er_wb });
-            right.push(hub);
-            right.push(Vec2 { x: er_nb, y: cy });
+            right.push(Vec2 {
+                x: g.x_from_east(config::TURN_RIGHT_DEPTH),
+                y: er_wb,
+            });
+            right.push(Vec2 {
+                x: er_nb,
+                y: er_wb,
+            });
+            right.push(Vec2 {
+                x: er_nb,
+                y: g.inner_y_north(),
+            });
             right.push(Vec2 {
                 x: ex_nb,
                 y: iy0 - arm,

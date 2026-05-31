@@ -20,11 +20,12 @@ fn main() -> Result<(), String> {
     let video = sdl.video()?;
     let window = video
         .window(
-            "Road Intersection",
+            "Road Intersection — Traffic Sim",
             road_intersection::config::WINDOW_WIDTH,
             road_intersection::config::WINDOW_HEIGHT,
         )
         .position_centered()
+        .resizable()
         .build()
         .map_err(|e| e.to_string())?;
 
