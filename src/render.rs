@@ -1122,7 +1122,7 @@ fn draw_signal_status(canvas: &mut Canvas<Window>, x: i32, y: i32, label: &str, 
 fn draw_vehicle_badge(canvas: &mut Canvas<Window>, x: i32, y: i32, count: usize) -> i32 {
     let scale = 2;
     let num = count.to_string();
-    let label = format!("CARS {num}");
+    let label = format!("VEHICLES {num}");
     let pad_x = 12;
     let pad_y = 8;
     let w = label_width(&label, scale) + pad_x * 2;
