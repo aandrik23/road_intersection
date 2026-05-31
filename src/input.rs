@@ -1,5 +1,7 @@
 use crate::simulation::Simulation;
-use crate::types::{lane_for_spawn_direction, random_route_uniform, random_vehicle_kind};
+use crate::types::{
+    lane_for_spawn_direction, random_route_uniform, random_vehicle_kind, RouteType, VehicleKind,
+};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
@@ -47,27 +49,61 @@ impl Default for InputHandler {
 }
 
 fn try_spawn_from_key(sim: &mut Simulation, key: Keycode, seed: &mut u32) {
-    let lane = match key {
-        Keycode::Up => Some(lane_for_spawn_direction(0)),
-        Keycode::Down => Some(lane_for_spawn_direction(1)),
-        Keycode::Right => Some(lane_for_spawn_direction(2)),
-        Keycode::Left => Some(lane_for_spawn_direction(3)),
+    let (lane, route, kind) = match key {
+        Keycode::Up => (
+            lane_for_spawn_direction(0),
+            next_route(seed),
+            next_vehicle_kind(seed),
+        ),
+        Keycode::Down => (
+            lane_for_spawn_direction(1),
+            next_route(seed),
+            next_vehicle_kind(seed),
+        ),
+        Keycode::Right => (
+            lane_for_spawn_direction(2),
+            next_route(seed),
+            next_vehicle_kind(seed),
+        ),
+        Keycode::Left => (
+            lane_for_spawn_direction(3),
+            next_route(seed),
+            next_vehicle_kind(seed),
+        ),
         Keycode::R => {
+            let roll = mix_spawn_seed(*seed);
             *seed = seed.wrapping_add(1);
-            Some(lane_for_spawn_direction(*seed as usize % 4))
+            (
+                lane_for_spawn_direction(roll as usize % 4),
+                random_route_uniform(roll.wrapping_shr(8)),
+                random_vehicle_kind(roll.wrapping_shr(16)),
+            )
         }
-        _ => None,
+        _ => return,
     };
 
-    let Some(lane) = lane else {
-        return;
-    };
-
-    *seed = seed.wrapping_add(1);
-    let route = random_route_uniform(*seed);
-    *seed = seed.wrapping_add(1);
-    let kind = random_vehicle_kind(*seed);
     let _ = sim.spawn_vehicle(lane, route, kind);
+}
+
+fn next_route(seed: &mut u32) -> RouteType {
+    *seed = seed.wrapping_add(1);
+    random_route_uniform(*seed)
+}
+
+fn next_vehicle_kind(seed: &mut u32) -> VehicleKind {
+    *seed = seed.wrapping_add(1);
+    random_vehicle_kind(*seed)
+}
+
+/// Scramble the spawn counter so lane / route / kind rolls stay independent per key press.
+fn mix_spawn_seed(seed: u32) -> u32 {
+    let mut x = seed;
+    x ^= x >> 16;
+    x = x.wrapping_mul(0x7feb_352d);
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x846c_a68b);
+    x ^= x >> 16;
+    x
 }
 
 #[cfg(test)]
@@ -110,5 +146,26 @@ mod tests {
         try_spawn_from_key(&mut sim, Keycode::Up, &mut seed);
         try_spawn_from_key(&mut sim, Keycode::Up, &mut seed);
         assert_eq!(sim.vehicles.len(), 1);
+    }
+
+    #[test]
+    fn r_key_randomizes_direction_and_route() {
+        use crate::types::RouteType;
+
+        let mut seed = 0u32;
+        let mut lanes = Vec::new();
+        let mut routes = Vec::new();
+
+        for _ in 0..12 {
+            let roll = mix_spawn_seed(seed);
+            seed = seed.wrapping_add(1);
+            lanes.push(lane_for_spawn_direction(roll as usize % 4));
+            routes.push(random_route_uniform(roll.wrapping_shr(8)));
+        }
+
+        assert!(lanes.iter().copied().collect::<std::collections::HashSet<_>>().len() > 1);
+        assert!(routes.contains(&RouteType::Left));
+        assert!(routes.contains(&RouteType::Right));
+        assert!(routes.contains(&RouteType::Straight));
     }
 }
