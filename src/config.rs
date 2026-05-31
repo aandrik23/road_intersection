@@ -1,6 +1,6 @@
 /// Shared simulation constants (pixels).
-pub const WINDOW_WIDTH: u32 = 1024;
-pub const WINDOW_HEIGHT: u32 = 768;
+pub const WINDOW_WIDTH: u32 = 1152;
+pub const WINDOW_HEIGHT: u32 = 864;
 pub const HUD_HEIGHT: u32 = 88;
 
 pub const CENTER_X: f32 = WINDOW_WIDTH as f32 * 0.5;
@@ -8,17 +8,21 @@ pub const CENTER_Y: f32 = (WINDOW_HEIGHT - HUD_HEIGHT) as f32 * 0.5 + 8.0;
 
 pub const VEHICLE_LENGTH: f32 = 22.0;
 pub const SAFETY_GAP: f32 = 10.0;
+/// Multiplier on follow gap — minimum space before another car may spawn on the lane.
+pub const SPAWN_QUEUE_FACTOR: f32 = 1.75;
+/// Small buffer when crossing perpendicular traffic in the box.
+pub const INTERSECTION_EXTRA_GAP: f32 = 4.0;
 pub const VEHICLE_SPEED: f32 = 90.0;
 /// Visual scale for car sprites (collision uses full `VEHICLE_LENGTH`).
-pub const VEHICLE_DRAW_SCALE: f32 = 0.88;
+pub const VEHICLE_DRAW_SCALE: f32 = 0.82;
 
-pub const INTERSECTION_HALF: f32 = 84.0;
-pub const LANE_WIDTH: f32 = 40.0;
+pub const INTERSECTION_HALF: f32 = 102.0;
+pub const LANE_WIDTH: f32 = 46.0;
 /// How far into the box (0–1) before a left turn begins (drive straight first).
 pub const TURN_LEFT_DEPTH: f32 = 0.66;
 /// Shallower entry for right turns.
 pub const TURN_RIGHT_DEPTH: f32 = 0.36;
-pub const ARM_LENGTH: f32 = 260.0;
+pub const ARM_LENGTH: f32 = 290.0;
 
 /// How far traffic lights sit beside the lane (not on the vehicle path).
 pub const TRAFFIC_LIGHT_SIDE_OFFSET: f32 = 28.0;

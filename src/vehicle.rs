@@ -76,6 +76,8 @@ impl Vehicle {
 
         let mut advance = config::VEHICLE_SPEED * dt;
         advance = cap_for_leader(self, vehicles, self_index, advance);
+        advance = cap_for_lane_proximity(self, vehicles, self_index, advance);
+        advance = cap_for_intersection(self, vehicles, self_index, advance);
         cap_for_red_light(self, signal, advance)
     }
 
@@ -146,15 +148,168 @@ fn min_follow_gap() -> f32 {
     config::VEHICLE_LENGTH + config::SAFETY_GAP
 }
 
-/// Same-lane queue on the approach; same route once past the stop line.
-fn shares_following_group(me: &Vehicle, other: &Vehicle) -> bool {
-    if me.lane != other.lane {
+fn spawn_queue_gap() -> f32 {
+    min_follow_gap() * config::SPAWN_QUEUE_FACTOR
+}
+
+fn travel_forward(heading_deg: f32) -> (f32, f32) {
+    let h = heading_deg.to_radians();
+    (h.cos(), h.sin())
+}
+
+fn spatially_ahead(me: &Vehicle, other: &Vehicle) -> bool {
+    let (fx, fy) = travel_forward(me.heading());
+    let dx = other.position().x - me.position().x;
+    let dy = other.position().y - me.position().y;
+    dx * fx + dy * fy > 6.0
+}
+
+fn intersection_min_sep() -> f32 {
+    min_follow_gap() + config::INTERSECTION_EXTRA_GAP
+}
+
+fn in_intersection_zone(pos: Vec2) -> bool {
+    pos.x >= config::IX0
+        && pos.x <= config::IX1
+        && pos.y >= config::IY0
+        && pos.y <= config::IY1
+}
+
+fn dist(a: Vec2, b: Vec2) -> f32 {
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    (dx * dx + dy * dy).sqrt()
+}
+
+/// How far past the stop line (same units as `route_progress`).
+fn intersection_commitment(v: &Vehicle) -> f32 {
+    (v.route_progress - v.lane_length).max(0.0)
+}
+
+/// North–south vs east–west entries can cross; same-phase lanes do not.
+fn lanes_conflict(a: LaneId, b: LaneId) -> bool {
+    use LaneId::{EastWb, NorthSb, SouthNb, WestEb};
+    let ns = matches!(a, NorthSb | SouthNb);
+    let ew = matches!(a, WestEb | EastWb);
+    let ns_b = matches!(b, NorthSb | SouthNb);
+    let ew_b = matches!(b, WestEb | EastWb);
+    (ns && ew_b) || (ew && ns_b)
+}
+
+/// True if `me` must yield to `other` at `pos` (prevents mutual deadlock).
+fn must_yield_to(
+    me: &Vehicle,
+    me_index: usize,
+    pos: Vec2,
+    other: &Vehicle,
+    other_index: usize,
+    min_sep: f32,
+) -> bool {
+    if !lanes_conflict(me.lane, other.lane) {
         return false;
     }
-    if me.route_progress < me.lane_length || other.route_progress < other.lane_length {
+
+    let other_pos = other.position();
+    if dist(pos, other_pos) >= min_sep {
+        return false;
+    }
+
+    if me.lane == other.lane {
+        return spatially_ahead(me, other);
+    }
+
+    let my_commit = intersection_commitment(me);
+    let other_commit = intersection_commitment(other);
+
+    if my_commit > other_commit + 10.0 {
+        return false;
+    }
+    if my_commit < other_commit - 10.0 {
         return true;
     }
-    me.route == other.route
+
+    me_index > other_index
+}
+
+fn position_clear_at(
+    pos: Vec2,
+    me: &Vehicle,
+    me_index: usize,
+    vehicles: &[Vehicle],
+    min_sep: f32,
+) -> bool {
+    if !in_intersection_zone(pos) {
+        return true;
+    }
+
+    for (i, other) in vehicles.iter().enumerate() {
+        if i == me_index || other.finished {
+            continue;
+        }
+        let other_pos = other.position();
+        if !in_intersection_zone(other_pos) {
+            continue;
+        }
+        if must_yield_to(me, me_index, pos, other, i, min_sep) {
+            return false;
+        }
+    }
+    true
+}
+
+fn intersection_move_ok(
+    me: &Vehicle,
+    vehicles: &[Vehicle],
+    self_index: usize,
+    advance: f32,
+    min_sep: f32,
+) -> bool {
+    if advance <= 0.0 {
+        return true;
+    }
+
+    const SAMPLES: usize = 6;
+    for step in 1..=SAMPLES {
+        let delta = advance * step as f32 / SAMPLES as f32;
+        let pos = sample_path(&me.path_points, me.route_progress + delta).0;
+        if !position_clear_at(pos, me, self_index, vehicles, min_sep) {
+            return false;
+        }
+    }
+    true
+}
+
+fn cap_for_intersection(
+    me: &Vehicle,
+    vehicles: &[Vehicle],
+    self_index: usize,
+    advance: f32,
+) -> f32 {
+    if advance <= 0.0 {
+        return 0.0;
+    }
+
+    let min_sep = intersection_min_sep();
+    if intersection_move_ok(me, vehicles, self_index, advance, min_sep) {
+        return advance;
+    }
+
+    let mut lo = 0.0f32;
+    let mut hi = advance;
+    for _ in 0..10 {
+        let mid = (lo + hi) * 0.5;
+        if intersection_move_ok(me, vehicles, self_index, mid, min_sep) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    lo
+}
+
+/// All cars on the same approach queue behind each other.
+fn shares_following_group(me: &Vehicle, other: &Vehicle) -> bool {
+    me.lane == other.lane
 }
 
 fn leader_progress(me: &Vehicle, vehicles: &[Vehicle], self_index: usize) -> Option<f32> {
@@ -163,7 +318,7 @@ fn leader_progress(me: &Vehicle, vehicles: &[Vehicle], self_index: usize) -> Opt
         if i == self_index || other.finished {
             continue;
         }
-        if !shares_following_group(me, other) {
+        if !shares_following_group(me, other) || me.route != other.route {
             continue;
         }
         if other.route_progress <= me.route_progress {
@@ -185,6 +340,28 @@ fn cap_for_leader(me: &Vehicle, vehicles: &[Vehicle], self_index: usize, advance
     advance.min(max_advance.max(0.0))
 }
 
+/// Same-lane spacing by position (covers different routes in the intersection).
+fn cap_for_lane_proximity(
+    me: &Vehicle,
+    vehicles: &[Vehicle],
+    self_index: usize,
+    advance: f32,
+) -> f32 {
+    let gap = min_follow_gap();
+    for (i, other) in vehicles.iter().enumerate() {
+        if i == self_index || other.finished || other.lane != me.lane {
+            continue;
+        }
+        if dist(me.position(), other.position()) >= gap {
+            continue;
+        }
+        if spatially_ahead(me, other) {
+            return 0.0;
+        }
+    }
+    advance
+}
+
 fn cap_for_red_light(me: &Vehicle, signal: SignalState, advance: f32) -> f32 {
     if signal == SignalState::Green {
         return advance;
@@ -198,13 +375,12 @@ fn cap_for_red_light(me: &Vehicle, signal: SignalState, advance: f32) -> f32 {
     advance.min(allowed.max(0.0))
 }
 
-/// True if another vehicle on this lane is too close to the spawn point.
-pub fn lane_spawn_blocked(vehicles: &[Vehicle], lane: LaneId) -> bool {
-    let min_gap = min_follow_gap();
-    vehicles
-        .iter()
-        .filter(|v| v.lane == lane && !v.finished)
-        .any(|v| v.route_progress < min_gap)
+/// True if the lane queue is too close to the spawn point for another car.
+pub fn lane_spawn_blocked(vehicles: &[Vehicle], lane: LaneId, spawn: Vec2) -> bool {
+    let clearance = spawn_queue_gap();
+    vehicles.iter().any(|v| {
+        v.lane == lane && !v.finished && dist(v.position(), spawn) < clearance
+    })
 }
 
 /// Vehicles waiting on the approach (before the stop line).
@@ -280,6 +456,33 @@ mod tests {
         let vehicles = [v.clone()];
         let advance = v.compute_advance(1.0, SignalState::Green, &vehicles, 0);
         assert!(advance > 0.0);
+    }
+
+    #[test]
+    fn intersection_zone_contains_center() {
+        let center = Vec2 {
+            x: config::CENTER_X,
+            y: config::CENTER_Y,
+        };
+        assert!(in_intersection_zone(center));
+    }
+
+    #[test]
+    fn intersection_blocks_advance_when_too_close() {
+        let world = World::new();
+        let mut a = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, &world);
+        let mut b = Vehicle::new(2, LaneId::WestEb, RouteType::Straight, &world);
+        let lane_a = a.lane_length;
+        let lane_b = b.lane_length;
+        a.apply_advance(lane_a + 40.0);
+        b.apply_advance(lane_b + 40.0);
+        let dist_now = dist(a.position(), b.position());
+        if dist_now >= intersection_min_sep() {
+            return;
+        }
+        let vehicles = vec![a.clone(), b.clone()];
+        let advance = a.compute_advance(1.0, SignalState::Green, &vehicles, 0);
+        assert!(advance < config::VEHICLE_SPEED * 0.5);
     }
 
     #[test]

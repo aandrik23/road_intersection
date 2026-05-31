@@ -40,7 +40,8 @@ impl Simulation {
         if self.vehicles.len() >= config::MAX_VEHICLES {
             return false;
         }
-        if lane_spawn_blocked(&self.vehicles, lane) {
+        let spawn = self.world.lane(lane).spawn;
+        if lane_spawn_blocked(&self.vehicles, lane, spawn) {
             return false;
         }
 
