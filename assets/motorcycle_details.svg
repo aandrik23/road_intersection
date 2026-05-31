@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 72">
+  <!-- Untinted overlay. Nose points up. -->
+
+  <!-- Handlebars -->
+  <path d="M6 12 L26 12" stroke="#303038" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="6" cy="12" r="2" fill="#484850" stroke="#101018" stroke-width="0.6"/>
+  <circle cx="26" cy="12" r="2" fill="#484850" stroke="#101018" stroke-width="0.6"/>
+
+  <!-- Headlight -->
+  <ellipse cx="16" cy="6" rx="3.5" ry="2.5" fill="#fff8d0" stroke="#101018" stroke-width="0.8"/>
+
+  <!-- Windscreen -->
+  <path d="M13 8 L16 4 L19 8 L18 12 L14 12 Z" fill="#4a6888" opacity="0.7" stroke="#101018" stroke-width="0.5"/>
+
+  <!-- Front wheel -->
+  <circle cx="16" cy="16" r="5.5" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <circle cx="16" cy="16" r="2.8" fill="#686870"/>
+
+  <!-- Rear wheel -->
+  <circle cx="16" cy="58" r="6" fill="#1a1a22" stroke="#101018" stroke-width="1"/>
+  <circle cx="16" cy="58" r="3" fill="#686870"/>
+
+  <!-- Exhaust (right side) -->
+  <ellipse cx="22" cy="52" rx="1.5" ry="4" fill="#505058" stroke="#101018" stroke-width="0.5"/>
+
+  <!-- Taillight -->
+  <ellipse cx="16" cy="66" rx="2" ry="1.2" fill="#e83030" stroke="#101018" stroke-width="0.5"/>
+</svg>

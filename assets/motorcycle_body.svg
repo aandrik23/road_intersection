@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 72">
+  <!-- Top-down motorcycle body (tinted). Nose points up. -->
+  <!-- Fuel tank -->
+  <ellipse cx="16" cy="22" rx="6" ry="8" fill="#c4c4cc" stroke="#101018" stroke-width="1.2"/>
+
+  <!-- Seat -->
+  <path d="M12 28 C12 32 13 38 14 44
+           L15 50 C15.5 52 16.5 52 17 50
+           L18 44 C19 38 20 32 20 28
+           C18 30 14 30 12 28 Z"
+        fill="#b8b8c0" stroke="#101018" stroke-width="1"/>
+
+  <!-- Frame / lower body -->
+  <path d="M14 18 L14 52 M18 18 L18 52" stroke="#909098" stroke-width="1.2" stroke-linecap="round"/>
+  <rect x="14.5" y="48" width="3" height="8" rx="1" fill="#a8a8b0" stroke="#101018" stroke-width="0.6"/>
+
+  <!-- Handlebar stem -->
+  <rect x="15" y="14" width="2" height="6" rx="0.5" fill="#888890" stroke="#101018" stroke-width="0.5"/>
+</svg>

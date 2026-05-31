@@ -158,12 +158,18 @@ fn sample_path(path: &[Vec2], mut distance: f32) -> (Vec2, f32) {
     (last, heading)
 }
 
-fn min_follow_gap() -> f32 {
-    config::VEHICLE_LENGTH + config::SAFETY_GAP
+fn follow_gap(me: &Vehicle) -> f32 {
+    let base = config::VEHICLE_LENGTH + config::SAFETY_GAP;
+    if me.route_progress < me.lane_length {
+        base + config::WAITING_EXTRA_GAP
+    } else {
+        base
+    }
 }
 
 fn spawn_queue_gap() -> f32 {
-    min_follow_gap() * config::SPAWN_QUEUE_FACTOR
+    (config::VEHICLE_LENGTH + config::SAFETY_GAP + config::WAITING_EXTRA_GAP)
+        * config::SPAWN_QUEUE_FACTOR
 }
 
 fn travel_forward(heading_deg: f32) -> (f32, f32) {
@@ -178,8 +184,8 @@ fn spatially_ahead(me: &Vehicle, other: &Vehicle) -> bool {
     dx * fx + dy * fy > 6.0
 }
 
-fn intersection_min_sep() -> f32 {
-    min_follow_gap() + config::INTERSECTION_EXTRA_GAP
+fn intersection_min_sep(me: &Vehicle) -> f32 {
+    follow_gap(me) + config::INTERSECTION_EXTRA_GAP
 }
 
 fn in_intersection_zone(pos: Vec2) -> bool {
@@ -303,7 +309,7 @@ fn cap_for_intersection(
         return 0.0;
     }
 
-    let min_sep = intersection_min_sep();
+    let min_sep = intersection_min_sep(me);
     if intersection_move_ok(me, vehicles, self_index, advance, min_sep) {
         return advance;
     }
@@ -350,7 +356,7 @@ fn cap_for_leader(me: &Vehicle, vehicles: &[Vehicle], self_index: usize, advance
     let Some(leader) = leader_progress(me, vehicles, self_index) else {
         return advance;
     };
-    let max_advance = leader - me.route_progress - min_follow_gap();
+    let max_advance = leader - me.route_progress - follow_gap(me);
     advance.min(max_advance.max(0.0))
 }
 
@@ -361,7 +367,7 @@ fn cap_for_lane_proximity(
     self_index: usize,
     advance: f32,
 ) -> f32 {
-    let gap = min_follow_gap();
+    let gap = follow_gap(me);
     for (i, other) in vehicles.iter().enumerate() {
         if i == self_index || other.finished || other.lane != me.lane {
             continue;
@@ -512,7 +518,7 @@ mod tests {
         a.apply_advance(lane_a + 40.0);
         b.apply_advance(lane_b + 40.0);
         let dist_now = dist(a.position(), b.position());
-        if dist_now >= intersection_min_sep() {
+        if dist_now >= intersection_min_sep(&a) {
             return;
         }
         let vehicles = vec![a.clone(), b.clone()];
@@ -525,7 +531,7 @@ mod tests {
         let world = World::new();
         let mut leader = Vehicle::new(1, LaneId::NorthSb, RouteType::Straight, VehicleKind::Car, &world);
         let mut follower = Vehicle::new(2, LaneId::NorthSb, RouteType::Straight, VehicleKind::Car, &world);
-        let gap = min_follow_gap();
+        let gap = follow_gap(&follower);
         leader.apply_advance(gap + 20.0);
         let vehicles = vec![leader.clone(), follower.clone()];
         let advance = follower.compute_advance(1.0, SignalState::Green, &vehicles, 1);

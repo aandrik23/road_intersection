@@ -704,31 +704,33 @@ fn draw_vehicle_sprite(
     let pos = v.position();
     let (width, height) = v.draw_sprite_size();
     let (min_w, min_h) = match v.kind {
-        VehicleKind::Car => (18.0, 24.0),
-        VehicleKind::Motorcycle => (12.0, 18.0),
+        VehicleKind::Car => (18.0, 28.0),
+        VehicleKind::Motorcycle => (10.0, 20.0),
     };
     let w = width.max(min_w) as u32;
     let h = height.max(min_h) as u32;
     let c = v.color();
     let angle = vehicle_sprite_rotation(v.heading());
-    let texture = match v.kind {
-        VehicleKind::Car => &mut sprites.car,
-        VehicleKind::Motorcycle => &mut sprites.motorcycle,
+    let (body, details) = match v.kind {
+        VehicleKind::Car => (&mut sprites.car_body, &mut sprites.car_details),
+        VehicleKind::Motorcycle => (&mut sprites.motorcycle_body, &mut sprites.motorcycle_details),
     };
 
+    // Drop shadow from body silhouette
     let _ = blit_sprite_centered(
         canvas,
-        texture,
+        body,
         w,
         h,
         pos.x + 2.0,
         pos.y + 2.0,
         angle,
-        Some((48, 48, 56)),
+        Some((40, 40, 48)),
     );
+    // Route-colored body panels
     let _ = blit_sprite_centered(
         canvas,
-        texture,
+        body,
         w,
         h,
         pos.x,
@@ -736,6 +738,8 @@ fn draw_vehicle_sprite(
         angle,
         Some((c.r, c.g, c.b)),
     );
+    // Untinted glass, wheels, and lights
+    let _ = blit_sprite_centered(canvas, details, w, h, pos.x, pos.y, angle, None);
 }
 
 fn draw_vehicles(canvas: &mut Canvas<Window>, sprites: &mut SpriteAtlas, sim: &Simulation) {

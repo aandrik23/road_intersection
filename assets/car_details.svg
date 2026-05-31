@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 96">
+  <!-- Untinted overlay: glass, wheels, lights. Nose points up. -->
+
+  <!-- Windshield -->
+  <path d="M14 28 C16 24 20 22 24 22 C28 22 32 24 34 28
+           L33 36 C31 34 27 33 24 33 C21 33 17 34 15 36 Z"
+        fill="#3a5878" stroke="#101018" stroke-width="0.8"/>
+
+  <!-- Rear window -->
+  <path d="M15 58 C17 54 20 52 24 52 C28 52 31 54 33 58
+           L32 64 C30 62 27 61 24 61 C21 61 18 62 16 64 Z"
+        fill="#3a5878" stroke="#101018" stroke-width="0.8"/>
+
+  <!-- Roof -->
+  <rect x="16" y="36" width="16" height="16" rx="2" fill="#282830" opacity="0.35"/>
+
+  <!-- Headlights -->
+  <ellipse cx="13" cy="11" rx="2.8" ry="1.8" fill="#fff8d0" stroke="#101018" stroke-width="0.5"/>
+  <ellipse cx="35" cy="11" rx="2.8" ry="1.8" fill="#fff8d0" stroke="#101018" stroke-width="0.5"/>
+
+  <!-- Taillights -->
+  <ellipse cx="12.5" cy="86" rx="2.5" ry="1.6" fill="#e83030" stroke="#101018" stroke-width="0.5"/>
+  <ellipse cx="35.5" cy="86" rx="2.5" ry="1.6" fill="#e83030" stroke="#101018" stroke-width="0.5"/>
+
+  <!-- Front-left wheel -->
+  <ellipse cx="10" cy="30" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
+  <ellipse cx="10" cy="30" rx="2.2" ry="1.3" fill="#686870"/>
+
+  <!-- Front-right wheel -->
+  <ellipse cx="38" cy="30" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
+  <ellipse cx="38" cy="30" rx="2.2" ry="1.3" fill="#686870"/>
+
+  <!-- Rear-left wheel -->
+  <ellipse cx="10" cy="66" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
+  <ellipse cx="10" cy="66" rx="2.2" ry="1.3" fill="#686870"/>
+
+  <!-- Rear-right wheel -->
+  <ellipse cx="38" cy="66" rx="4.2" ry="2.6" fill="#1a1a22" stroke="#101018" stroke-width="0.8"/>
+  <ellipse cx="38" cy="66" rx="2.2" ry="1.3" fill="#686870"/>
+</svg>

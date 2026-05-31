@@ -5,15 +5,19 @@ use sdl2::surface::Surface;
 use sdl2::video::WindowContext;
 use std::path::PathBuf;
 
-const CAR_SVG: &str = include_str!("../assets/car.svg");
-const MOTORCYCLE_SVG: &str = include_str!("../assets/motorcycle.svg");
+const CAR_BODY_SVG: &str = include_str!("../assets/car_body.svg");
+const CAR_DETAILS_SVG: &str = include_str!("../assets/car_details.svg");
+const MOTORCYCLE_BODY_SVG: &str = include_str!("../assets/motorcycle_body.svg");
+const MOTORCYCLE_DETAILS_SVG: &str = include_str!("../assets/motorcycle_details.svg");
 const SIGNAL_RED_SVG: &str = include_str!("../assets/traffic_light_red.svg");
 const SIGNAL_GREEN_SVG: &str = include_str!("../assets/traffic_light_green.svg");
 
 /// Textures outlive the temporary `TextureCreator` (valid until the window canvas is dropped).
 pub struct SpriteAtlas {
-    pub car: Texture<'static>,
-    pub motorcycle: Texture<'static>,
+    pub car_body: Texture<'static>,
+    pub car_details: Texture<'static>,
+    pub motorcycle_body: Texture<'static>,
+    pub motorcycle_details: Texture<'static>,
     pub signal_red: Texture<'static>,
     pub signal_green: Texture<'static>,
     pub car_w: u32,
@@ -26,19 +30,25 @@ pub struct SpriteAtlas {
 
 impl SpriteAtlas {
     pub fn load(creator: &TextureCreator<WindowContext>) -> Result<Self, String> {
-        let car_dims = (48u32, 96u32);
-        let bike_dims = (28u32, 64u32);
+        let car_dims = (56u32, 112u32);
+        let bike_dims = (32u32, 72u32);
         let signal_dims = (32u32, 48u32);
 
-        let car = texture_from_svg(creator, CAR_SVG, car_dims.0, car_dims.1)?;
-        let motorcycle = texture_from_svg(creator, MOTORCYCLE_SVG, bike_dims.0, bike_dims.1)?;
+        let car_body = texture_from_svg(creator, CAR_BODY_SVG, car_dims.0, car_dims.1)?;
+        let car_details = texture_from_svg(creator, CAR_DETAILS_SVG, car_dims.0, car_dims.1)?;
+        let motorcycle_body =
+            texture_from_svg(creator, MOTORCYCLE_BODY_SVG, bike_dims.0, bike_dims.1)?;
+        let motorcycle_details =
+            texture_from_svg(creator, MOTORCYCLE_DETAILS_SVG, bike_dims.0, bike_dims.1)?;
         let signal_red = texture_from_svg(creator, SIGNAL_RED_SVG, signal_dims.0, signal_dims.1)?;
         let signal_green =
             texture_from_svg(creator, SIGNAL_GREEN_SVG, signal_dims.0, signal_dims.1)?;
 
         Ok(Self {
-            car: extend_texture_lifetime(car),
-            motorcycle: extend_texture_lifetime(motorcycle),
+            car_body: extend_texture_lifetime(car_body),
+            car_details: extend_texture_lifetime(car_details),
+            motorcycle_body: extend_texture_lifetime(motorcycle_body),
+            motorcycle_details: extend_texture_lifetime(motorcycle_details),
             signal_red: extend_texture_lifetime(signal_red),
             signal_green: extend_texture_lifetime(signal_green),
             car_w: car_dims.0,

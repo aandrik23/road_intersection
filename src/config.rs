@@ -8,11 +8,13 @@ pub const CENTER_Y: f32 = (WINDOW_HEIGHT - HUD_HEIGHT) as f32 * 0.5 + 8.0;
 
 pub const VEHICLE_LENGTH: f32 = 22.0;
 pub const MOTORCYCLE_LENGTH: f32 = 14.0;
-pub const SAFETY_GAP: f32 = 10.0;
+pub const SAFETY_GAP: f32 = 16.0;
+/// Extra bumper space when queued on the approach (before the stop line).
+pub const WAITING_EXTRA_GAP: f32 = 14.0;
 /// Multiplier on follow gap — minimum space before another car may spawn on the lane.
 pub const SPAWN_QUEUE_FACTOR: f32 = 1.75;
 /// Small buffer when crossing perpendicular traffic in the box.
-pub const INTERSECTION_EXTRA_GAP: f32 = 4.0;
+pub const INTERSECTION_EXTRA_GAP: f32 = 6.0;
 pub const VEHICLE_SPEED: f32 = 90.0;
 /// Visual scale for vehicle sprites (collision uses full `VEHICLE_LENGTH`).
 pub const VEHICLE_DRAW_SCALE: f32 = 1.22;
